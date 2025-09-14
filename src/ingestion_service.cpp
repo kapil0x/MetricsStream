@@ -1,0 +1,461 @@
+#include "ingestion_service.h"
+#include <iostream>
+#include <thread>
+#include <cmath>
+#include <iomanip>
+#include <ctime>
+
+namespace metricstream {
+
+// TODO(human): Implement sliding window rate limiting algorithm
+// Consider using a token bucket or sliding window approach
+// Store client request counts with timestamps
+
+//
+
+RateLimiter::RateLimiter(size_t max_requests_per_second) 
+    : max_requests_(max_requests_per_second) {
+}
+
+bool RateLimiter::allow_request(const std::string& client_id) {
+    bool decision;
+    auto now = std::chrono::steady_clock::now();
+    
+    // Rate limiting logic with mutex
+    {
+        std::lock_guard<std::mutex> lock(rate_limiter_mutex_);
+        auto& client_queue = client_requests_[client_id];
+        
+        // Remove old timestamps (older than 1 second)
+        while (!client_queue.empty()) {
+            auto oldest_timestamp = client_queue.front();
+            auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - oldest_timestamp);
+
+            if (time_diff.count() >= 1) {
+                client_queue.pop_front();
+            } else {
+                break;
+            }
+        }
+        
+        if(client_queue.size() < max_requests_){
+            client_queue.push_back(now);
+            decision = true;
+        } else {
+            decision = false;
+        }
+    }
+    
+    // Lockless metrics collection
+    {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        auto& metrics = client_metrics_[client_id];
+        size_t write_idx = metrics.write_index.load();
+        
+        metrics.ring_buffer[write_idx % ClientMetrics::BUFFER_SIZE] = MetricEvent{now, decision};
+        metrics.write_index.store(write_idx + 1);
+    }
+    
+    return decision;
+}
+
+void RateLimiter::flush_metrics() {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    
+    for (auto& [client_id, metrics] : client_metrics_) {
+        size_t read_idx = metrics.read_index.load();
+        size_t write_idx = metrics.write_index.load();
+        
+        // Process all new events between read and write indices
+        for (size_t i = read_idx; i < write_idx; ++i) {
+            MetricEvent event = metrics.ring_buffer[i % ClientMetrics::BUFFER_SIZE];
+            send_to_monitoring(client_id, event.timestamp, event.allowed);
+        }
+        
+        // Mark all events as processed
+        metrics.read_index.store(write_idx);
+    }
+}
+
+void RateLimiter::send_to_monitoring(const std::string& client_id,
+                                   const std::chrono::time_point<std::chrono::steady_clock>& timestamp,
+                                   bool allowed) {
+    // Convert timestamp to milliseconds since epoch for monitoring
+    auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+        timestamp.time_since_epoch()).count();
+    
+    // In production, this would send to your monitoring system (Prometheus, DataDog, etc.)
+    std::cout << "[METRICS] client=" << client_id 
+              << " timestamp=" << ms_since_epoch 
+              << " allowed=" << (allowed ? "true" : "false") << std::endl;
+}
+
+MetricValidator::ValidationResult MetricValidator::validate_metric(const Metric& metric) const {
+    ValidationResult result;
+    result.valid = true;
+    
+    if (metric.name.empty()) {
+        result.valid = false;
+        result.error_message = "Metric name cannot be empty";
+        return result;
+    }
+    
+    if (metric.name.length() > 255) {
+        result.valid = false;
+        result.error_message = "Metric name too long (max 255 characters)";
+        return result;
+    }
+    
+    if (std::isnan(metric.value) || std::isinf(metric.value)) {
+        result.valid = false;
+        result.error_message = "Metric value must be a finite number";
+        return result;
+    }
+    
+    return result;
+}
+
+MetricValidator::ValidationResult MetricValidator::validate_batch(const MetricBatch& batch) const {
+    ValidationResult result;
+    result.valid = true;
+    
+    if (batch.empty()) {
+        result.valid = false;
+        result.error_message = "Batch cannot be empty";
+        return result;
+    }
+    
+    if (batch.size() > 1000) {
+        result.valid = false;
+        result.error_message = "Batch size exceeds maximum (1000 metrics)";
+        return result;
+    }
+    
+    for (const auto& metric : batch.metrics) {
+        ValidationResult metric_result = validate_metric(metric);
+        if (!metric_result.valid) {
+            result.valid = false;
+            result.error_message = "Invalid metric: " + metric_result.error_message;
+            return result;
+        }
+    }
+    
+    return result;
+}
+
+IngestionService::IngestionService(int port, size_t rate_limit)
+    : metrics_received_(0), batches_processed_(0), validation_errors_(0), rate_limited_(0) {
+    
+    server_ = std::make_unique<HttpServer>(port);
+    validator_ = std::make_unique<MetricValidator>();
+    rate_limiter_ = std::make_unique<RateLimiter>(rate_limit);
+    
+    // Open metrics file for storage
+    metrics_file_.open("metrics.jsonl", std::ios::app);
+    if (!metrics_file_.is_open()) {
+        std::cerr << "Warning: Could not open metrics.jsonl for writing" << std::endl;
+    }
+    
+    // Register HTTP endpoints
+    server_->add_handler("/metrics", "POST", 
+        [this](const HttpRequest& req) { return handle_metrics_post(req); });
+    server_->add_handler("/health", "GET", 
+        [this](const HttpRequest& req) { return handle_health_check(req); });
+    server_->add_handler("/metrics", "GET", 
+        [this](const HttpRequest& req) { return handle_metrics_get(req); });
+}
+
+IngestionService::~IngestionService() {
+    stop();
+    if (metrics_file_.is_open()) {
+        metrics_file_.close();
+    }
+}
+
+void IngestionService::start() {
+    server_->start();
+    std::cout << "Ingestion service started" << std::endl;
+}
+
+void IngestionService::stop() {
+    if (server_) {
+        server_->stop();
+    }
+    std::cout << "Ingestion service stopped" << std::endl;
+}
+
+HttpResponse IngestionService::handle_metrics_post(const HttpRequest& request) {
+    HttpResponse response;
+    response.set_json_content();
+    
+    // Extract client ID from headers or use IP as fallback
+    std::string client_id = "default";
+    auto auth_header = request.headers.find("Authorization");
+    if (auth_header != request.headers.end()) {
+        client_id = auth_header->second;
+    }
+    
+    // Check rate limiting
+    if (!rate_limiter_->allow_request(client_id)) {
+        rate_limited_++;
+        response.status_code = 429;
+        response.body = create_error_response("Rate limit exceeded");
+        return response;
+    }
+    
+    try {
+        MetricBatch batch = parse_json_metrics(request.body);
+        
+        auto validation_result = validator_->validate_batch(batch);
+        if (!validation_result.valid) {
+            validation_errors_++;
+            response.status_code = 400;
+            response.body = create_error_response(validation_result.error_message);
+            return response;
+        }
+        
+        metrics_received_ += batch.size();
+        batches_processed_++;
+        
+        // Store metrics to file (MVP storage)
+        store_metrics_to_file(batch);
+        
+        response.body = create_success_response(batch.size());
+        
+    } catch (const std::exception& e) {
+        validation_errors_++;
+        response.status_code = 400;
+        response.body = create_error_response("Invalid JSON: " + std::string(e.what()));
+    }
+    
+    return response;
+}
+
+HttpResponse IngestionService::handle_health_check(const HttpRequest& request) {
+    HttpResponse response;
+    response.set_json_content();
+    response.body = R"({"status":"healthy","service":"ingestion"})";
+    return response;
+}
+
+HttpResponse IngestionService::handle_metrics_get(const HttpRequest& request) {
+    HttpResponse response;
+    response.set_json_content();
+    
+    // Return service statistics
+    response.body = "{"
+        "\"metrics_received\":" + std::to_string(metrics_received_) + ","
+        "\"batches_processed\":" + std::to_string(batches_processed_) + ","
+        "\"validation_errors\":" + std::to_string(validation_errors_) + ","
+        "\"rate_limited_requests\":" + std::to_string(rate_limited_) +
+        "}";
+    
+    return response;
+}
+
+MetricBatch IngestionService::parse_json_metrics(const std::string& json_body) {
+    MetricBatch batch;
+    
+    try {
+        // Simple JSON parsing for metrics array
+        // Expected format: {"metrics": [{"name": "cpu_usage", "value": 75.5, "type": "gauge", "tags": {"host": "server1"}}]}
+        
+        size_t metrics_pos = json_body.find("\"metrics\"");
+        if (metrics_pos == std::string::npos) {
+            throw std::runtime_error("Missing 'metrics' field");
+        }
+        
+        size_t array_start = json_body.find("[", metrics_pos);
+        size_t array_end = json_body.find("]", array_start);
+        if (array_start == std::string::npos || array_end == std::string::npos) {
+            throw std::runtime_error("Invalid metrics array format");
+        }
+        
+        std::string metrics_array = json_body.substr(array_start + 1, array_end - array_start - 1);
+        
+        // Parse individual metric objects
+        size_t pos = 0;
+        while (pos < metrics_array.length()) {
+            size_t obj_start = metrics_array.find("{", pos);
+            if (obj_start == std::string::npos) break;
+            
+            size_t obj_end = metrics_array.find("}", obj_start);
+            if (obj_end == std::string::npos) break;
+            
+            std::string metric_obj = metrics_array.substr(obj_start, obj_end - obj_start + 1);
+            
+            Metric metric = parse_single_metric(metric_obj);
+            batch.add_metric(std::move(metric));
+            
+            pos = obj_end + 1;
+        }
+        
+    } catch (const std::exception& e) {
+        throw std::runtime_error("JSON parsing error: " + std::string(e.what()));
+    }
+    
+    return batch;
+}
+
+Metric IngestionService::parse_single_metric(const std::string& metric_json) {
+    // Extract name
+    std::string name = extract_string_field(metric_json, "name");
+    
+    // Extract value
+    double value = extract_numeric_field(metric_json, "value");
+    
+    // Extract type (default to GAUGE)
+    std::string type_str = extract_string_field(metric_json, "type");
+    MetricType type = MetricType::GAUGE;
+    if (type_str == "counter") type = MetricType::COUNTER;
+    else if (type_str == "histogram") type = MetricType::HISTOGRAM;
+    else if (type_str == "summary") type = MetricType::SUMMARY;
+    
+    // Extract tags (simple key-value parsing)
+    Tags tags = extract_tags(metric_json);
+    
+    return Metric(name, value, type, tags);
+}
+
+std::string IngestionService::extract_string_field(const std::string& json, const std::string& field) {
+    std::string search_pattern = "\"" + field + "\"";
+    size_t field_pos = json.find(search_pattern);
+    if (field_pos == std::string::npos) {
+        return "";
+    }
+    
+    size_t colon_pos = json.find(":", field_pos);
+    size_t quote_start = json.find("\"", colon_pos);
+    size_t quote_end = json.find("\"", quote_start + 1);
+    
+    if (quote_start == std::string::npos || quote_end == std::string::npos) {
+        return "";
+    }
+    
+    return json.substr(quote_start + 1, quote_end - quote_start - 1);
+}
+
+double IngestionService::extract_numeric_field(const std::string& json, const std::string& field) {
+    std::string search_pattern = "\"" + field + "\"";
+    size_t field_pos = json.find(search_pattern);
+    if (field_pos == std::string::npos) {
+        throw std::runtime_error("Missing field: " + field);
+    }
+    
+    size_t colon_pos = json.find(":", field_pos);
+    size_t number_start = colon_pos + 1;
+    
+    // Skip whitespace
+    while (number_start < json.length() && std::isspace(json[number_start])) {
+        number_start++;
+    }
+    
+    size_t number_end = number_start;
+    while (number_end < json.length() && 
+           (std::isdigit(json[number_end]) || json[number_end] == '.' || json[number_end] == '-')) {
+        number_end++;
+    }
+    
+    std::string number_str = json.substr(number_start, number_end - number_start);
+    return std::stod(number_str);
+}
+
+Tags IngestionService::extract_tags(const std::string& json) {
+    Tags tags;
+    
+    size_t tags_pos = json.find("\"tags\"");
+    if (tags_pos == std::string::npos) {
+        return tags; // No tags field
+    }
+    
+    size_t obj_start = json.find("{", tags_pos);
+    size_t obj_end = json.find("}", obj_start);
+    
+    if (obj_start == std::string::npos || obj_end == std::string::npos) {
+        return tags;
+    }
+    
+    std::string tags_obj = json.substr(obj_start + 1, obj_end - obj_start - 1);
+    
+    // Simple key-value parsing: "key1":"value1","key2":"value2"
+    size_t pos = 0;
+    while (pos < tags_obj.length()) {
+        size_t key_start = tags_obj.find("\"", pos);
+        if (key_start == std::string::npos) break;
+        
+        size_t key_end = tags_obj.find("\"", key_start + 1);
+        size_t colon = tags_obj.find(":", key_end);
+        size_t value_start = tags_obj.find("\"", colon);
+        size_t value_end = tags_obj.find("\"", value_start + 1);
+        
+        if (key_end != std::string::npos && value_start != std::string::npos && value_end != std::string::npos) {
+            std::string key = tags_obj.substr(key_start + 1, key_end - key_start - 1);
+            std::string value = tags_obj.substr(value_start + 1, value_end - value_start - 1);
+            tags[key] = value;
+        }
+        
+        pos = value_end + 1;
+    }
+    
+    return tags;
+}
+
+void IngestionService::store_metrics_to_file(const MetricBatch& batch) {
+    if (!metrics_file_.is_open()) {
+        return;
+    }
+    
+    std::lock_guard<std::mutex> lock(file_mutex_);
+    
+    for (const auto& metric : batch.metrics) {
+        // Convert timestamp to ISO string
+        auto time_t = std::chrono::system_clock::to_time_t(metric.timestamp);
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            metric.timestamp.time_since_epoch()) % 1000;
+        
+        char timestamp_str[32];
+        std::strftime(timestamp_str, sizeof(timestamp_str), "%Y-%m-%dT%H:%M:%S", std::gmtime(&time_t));
+        
+        // Convert metric type to string
+        std::string type_str;
+        switch (metric.type) {
+            case MetricType::COUNTER: type_str = "counter"; break;
+            case MetricType::GAUGE: type_str = "gauge"; break;
+            case MetricType::HISTOGRAM: type_str = "histogram"; break;
+            case MetricType::SUMMARY: type_str = "summary"; break;
+        }
+        
+        // Write as JSON Lines format
+        metrics_file_ << "{"
+                     << "\"timestamp\":\"" << timestamp_str << "." << std::setfill('0') << std::setw(3) << ms.count() << "Z\","
+                     << "\"name\":\"" << metric.name << "\","
+                     << "\"value\":" << metric.value << ","
+                     << "\"type\":\"" << type_str << "\"";
+        
+        // Add tags if present
+        if (!metric.tags.empty()) {
+            metrics_file_ << ",\"tags\":{";
+            bool first = true;
+            for (const auto& [key, value] : metric.tags) {
+                if (!first) metrics_file_ << ",";
+                metrics_file_ << "\"" << key << "\":\"" << value << "\"";
+                first = false;
+            }
+            metrics_file_ << "}";
+        }
+        
+        metrics_file_ << "}\n";
+    }
+    
+    metrics_file_.flush(); // Ensure data is written immediately
+}
+
+std::string IngestionService::create_error_response(const std::string& message) {
+    return "{\"error\":\"" + message + "\"}";
+}
+
+std::string IngestionService::create_success_response(size_t metrics_count) {
+    return "{\"success\":true,\"metrics_processed\":" + std::to_string(metrics_count) + "}";
+}
+
+} // namespace metricstream
