@@ -11,6 +11,9 @@
 #include <array>
 #include <atomic>
 #include <fstream>
+#include <queue>
+#include <condition_variable>
+#include <thread>
 
 namespace metricstream {
 
@@ -91,6 +94,13 @@ private:
     std::ofstream metrics_file_;
     std::mutex file_mutex_;
     
+    // Asynchronous batch writer infrastructure
+    std::queue<MetricBatch> write_queue_;
+    std::mutex queue_mutex_;
+    std::condition_variable queue_cv_;
+    std::thread writer_thread_;
+    std::atomic<bool> writer_running_{true};
+    
     // HTTP handlers
     HttpResponse handle_metrics_post(const HttpRequest& request);
     HttpResponse handle_health_check(const HttpRequest& request);
@@ -103,6 +113,8 @@ private:
     double extract_numeric_field(const std::string& json, const std::string& field);
     Tags extract_tags(const std::string& json);
     void store_metrics_to_file(const MetricBatch& batch);
+    void queue_metrics_for_async_write(const MetricBatch& batch);
+    void async_writer_loop();
     std::string create_error_response(const std::string& message);
     std::string create_success_response(size_t metrics_count);
 };

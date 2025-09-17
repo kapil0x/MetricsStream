@@ -156,6 +156,9 @@ IngestionService::IngestionService(int port, size_t rate_limit)
         std::cerr << "Warning: Could not open metrics.jsonl for writing" << std::endl;
     }
     
+    // Start async writer thread
+    writer_thread_ = std::thread(&IngestionService::async_writer_loop, this);
+    
     // Register HTTP endpoints
     server_->add_handler("/metrics", "POST", 
         [this](const HttpRequest& req) { return handle_metrics_post(req); });
@@ -167,6 +170,14 @@ IngestionService::IngestionService(int port, size_t rate_limit)
 
 IngestionService::~IngestionService() {
     stop();
+    
+    // Shutdown async writer thread
+    writer_running_ = false;
+    queue_cv_.notify_all();
+    if (writer_thread_.joinable()) {
+        writer_thread_.join();
+    }
+    
     if (metrics_file_.is_open()) {
         metrics_file_.close();
     }
@@ -217,8 +228,8 @@ HttpResponse IngestionService::handle_metrics_post(const HttpRequest& request) {
         metrics_received_ += batch.size();
         batches_processed_++;
         
-        // Store metrics to file (MVP storage)
-        store_metrics_to_file(batch);
+        // Queue metrics for asynchronous writing (no blocking!)
+        queue_metrics_for_async_write(batch);
         
         response.body = create_success_response(batch.size());
         
@@ -456,6 +467,40 @@ std::string IngestionService::create_error_response(const std::string& message) 
 
 std::string IngestionService::create_success_response(size_t metrics_count) {
     return "{\"success\":true,\"metrics_processed\":" + std::to_string(metrics_count) + "}";
+}
+
+void IngestionService::queue_metrics_for_async_write(const MetricBatch& batch) {
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex_);
+        write_queue_.push(batch);
+    }
+    queue_cv_.notify_one(); // Wake up writer thread
+}
+
+void IngestionService::async_writer_loop() {
+    while (writer_running_) {
+        std::unique_lock<std::mutex> lock(queue_mutex_);
+        
+        // Wait for batches to write or shutdown signal
+        queue_cv_.wait(lock, [this] { 
+            return !write_queue_.empty() || !writer_running_; 
+        });
+        
+        // Process all pending batches
+        while (!write_queue_.empty() && writer_running_) {
+            MetricBatch batch = write_queue_.front();
+            write_queue_.pop();
+            
+            // Release lock before expensive I/O operation
+            lock.unlock();
+            
+            // Write batch to file (this is now done asynchronously)
+            store_metrics_to_file(batch);
+            
+            // Reacquire lock for next iteration
+            lock.lock();
+        }
+    }
 }
 
 } // namespace metricstream
