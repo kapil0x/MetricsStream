@@ -210,11 +210,11 @@ Load Balancer → [Server1: 2K RPS]
 ### Phase 4: Storage
 - **Time-series Database** (ClickHouse integration)
 - **Data Retention Policies** (automated cleanup)
-- **Query Optimization** (indexing strategies - like Elasticsearch)
-- **Compression** (storage efficiency - like InfluxDB)
+- **Query Optimization** (indexing strategies)
+- **Compression** (storage efficiency)
 
 ### Phase 5: Distribution
-- **Horizontal Auto-scaling** (Kubernetes-style orchestration)
+- **Horizontal Auto-scaling** (container orchestration)
 - **Load Balancing** (consistent hashing)
 - **Service Discovery** (health checks)
 - **Cross-region Replication** (global availability)
