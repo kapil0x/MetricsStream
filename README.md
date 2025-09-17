@@ -1,28 +1,15 @@
 # MetricStream
 
-A learning-focused metrics collection system built in C++ to demonstrate distributed systems concepts. **Think Datadog, New Relic, or Prometheus** - but built from scratch to teach the underlying engineering patterns.
-
-This repository shows how companies like **Netflix, Uber, and Airbnb** handle millions of metrics per second through hands-on implementation of real-world distributed systems patterns.
-
-## 🎯 What We're Building
-
-**A production-style metrics platform** similar to industry leaders:
-
-| Real-World Example | What They Handle | Our Learning Implementation |
-|---|---|---|
-| **Netflix** | 2.5 billion metrics/day | Sliding window rate limiting + ring buffers |
-| **Uber** | 100M+ events/second | Thread pools → Async I/O → Horizontal scaling |
-| **Datadog** | Custom time-series DB | File storage → ClickHouse integration |
-| **Prometheus** | Pull-based monitoring | HTTP API with JSON metrics format |
+A learning-focused metrics collection system built in C++ to demonstrate distributed systems concepts. Think tools like **Datadog, Prometheus, or Grafana** - we're building a similar metrics platform from scratch to learn the underlying engineering patterns.
 
 ## 🎯 Learning Goals
 
-This project demonstrates the core patterns behind these systems:
-- **HTTP Server Implementation** - Raw socket programming (like nginx internals)
-- **Rate Limiting Algorithms** - Sliding window (used by Twitter, GitHub APIs)
-- **Concurrent Programming** - Thread safety patterns (Go/Rust-style concurrency)
-- **System Design** - Layered architecture (microservices at scale)
-- **JSON Processing** - Custom parser (zero-dependency approach)
+This project demonstrates:
+- **HTTP Server Implementation** - Raw socket programming and request parsing
+- **Rate Limiting Algorithms** - Sliding window with ring buffer metrics
+- **Concurrent Programming** - Thread safety, atomic operations, lockless patterns
+- **System Design** - Layered architecture and scaling considerations
+- **JSON Processing** - Custom parser implementation without external dependencies
 - **Performance Engineering** - 200 RPS → 10K RPS scaling journey
 
 ## 📋 Architecture
