@@ -1,16 +1,38 @@
 # MetricStream
 
-A learning-focused metrics collection system built in C++ to demonstrate distributed systems concepts. This repository teaches key patterns like rate limiting, concurrent processing, and system design through hands-on implementation.
+A learning-focused metrics collection system built in C++ to demonstrate distributed systems concepts. **Think Datadog, New Relic, or Prometheus** - but built from scratch to teach the underlying engineering patterns.
+
+This repository shows how companies like **Netflix, Uber, and Airbnb** handle millions of metrics per second through hands-on implementation of real-world distributed systems patterns.
+
+## 🎯 What We're Building
+
+**A production-style metrics platform** similar to industry leaders:
+
+| Real-World Example | What They Handle | Our Learning Implementation |
+|---|---|---|
+| **Netflix** | 2.5 billion metrics/day | Sliding window rate limiting + ring buffers |
+| **Uber** | 100M+ events/second | Thread pools → Async I/O → Horizontal scaling |
+| **Datadog** | Custom time-series DB | File storage → ClickHouse integration |
+| **Prometheus** | Pull-based monitoring | HTTP API with JSON metrics format |
 
 ## 🎯 Learning Goals
 
-This project demonstrates:
-- **HTTP Server Implementation** - Raw socket programming and request parsing
-- **Rate Limiting Algorithms** - Sliding window with ring buffer metrics
-- **Concurrent Programming** - Thread safety, atomic operations, lockless patterns
-- **System Design** - Layered architecture and scaling considerations
-- **JSON Processing** - Custom parser implementation without external dependencies
-- **File I/O** - Efficient metric storage and retrieval
+This project demonstrates the core patterns behind these systems:
+- **HTTP Server Implementation** - Raw socket programming (like nginx internals)
+- **Rate Limiting Algorithms** - Sliding window (used by Twitter, GitHub APIs)
+- **Concurrent Programming** - Thread safety patterns (Go/Rust-style concurrency)
+- **System Design** - Layered architecture (microservices at scale)
+- **JSON Processing** - Custom parser (zero-dependency approach)
+- **Performance Engineering** - 200 RPS → 10K RPS scaling journey
+
+## 📋 Architecture
+
+For detailed architecture documentation, see: **[CLAUDE.md](CLAUDE.md)**
+
+**High-level data flow:**
+```
+Client Apps → HTTP API → Rate Limiter → JSON Parser → Storage → Query Engine
+```
 
 ## Quick Start
 
@@ -34,18 +56,22 @@ cat metrics.jsonl
 
 ## Current Implementation
 
-**What's Built:**
-- HTTP server with basic routing (`/metrics`, `/health`, `/stats`)
-- Sliding window rate limiter (per-client tracking)
-- JSON parser for metric data (name, value, type, tags)
-- File storage in JSON Lines format
-- Test client for validation
+**What's Built (Production Patterns):**
+- **HTTP Server** - Raw socket implementation (like nginx/Apache internals)
+- **Rate Limiting** - Sliding window algorithm (used by Twitter/GitHub APIs) 
+- **JSON Processing** - Custom parser (zero dependencies, like embedded systems)
+- **Storage Layer** - JSON Lines format (similar to log aggregators)
+- **Monitoring** - Statistics endpoints (like Prometheus /metrics)
 
-**Performance:**
-- ~200 requests/second (current sequential processing)
-- **Goal**: Scale to 10,000 requests/second
-- Each request can contain multiple metrics in batches
-- Single-threaded MVP design for learning simplicity
+**Real-World Comparisons:**
+- **Current**: ~200 RPS (small startup scale)
+- **Target**: 10K RPS (mid-size company scale - like Reddit, Slack)
+- **Industry**: 100K+ RPS (Netflix, Uber, Google scale)
+
+**Why This Matters:**
+- **Startups** often begin with simple metrics collection (our MVP)
+- **Scale-ups** need rate limiting and concurrent processing (Phase 2)
+- **Enterprises** require distributed systems and horizontal scaling (Phase 3+)
 
 ## API Examples
 
@@ -188,23 +214,23 @@ Load Balancer → [Server1: 2K RPS]
 - Connection pooling and keep-alive
 - Performance benchmarking and profiling
 
-### Phase 3: Streaming
-- Message queue integration (Kafka)
-- Stream processing
-- Event-driven architecture
-- Data partitioning
+### Phase 3: Streaming (Netflix/Uber Scale)
+- **Message Queue Integration** (Kafka - like LinkedIn's architecture)
+- **Stream Processing** (real-time aggregation - like Twitter's infrastructure) 
+- **Event-driven Architecture** (microservices communication)
+- **Data Partitioning** (sharding strategies used by Facebook)
 
-### Phase 4: Storage
-- Time-series database (ClickHouse)
-- Data retention policies
-- Query optimization
-- Indexing strategies
+### Phase 4: Storage (Datadog/Prometheus Scale)
+- **Time-series Database** (ClickHouse - used by Cloudflare, Uber)
+- **Data Retention Policies** (automated cleanup - like AWS CloudWatch)
+- **Query Optimization** (indexing strategies - like Elasticsearch)
+- **Compression** (storage efficiency - like InfluxDB)
 
-### Phase 5: Distribution
-- Horizontal scaling
-- Load balancing
-- Service discovery
-- Monitoring and observability
+### Phase 5: Distribution (Google/Amazon Scale)
+- **Horizontal Auto-scaling** (Kubernetes-style orchestration)
+- **Load Balancing** (consistent hashing - like Cassandra)
+- **Service Discovery** (health checks - like Consul/etcd)
+- **Cross-region Replication** (global availability - like AWS)
 
 ## Key Files
 

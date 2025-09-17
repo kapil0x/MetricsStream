@@ -28,6 +28,12 @@ Thumbs.db
 *.log
 metrics.jsonl
 
+# Development notes and personal files
+NOTES.md
+TODO.md
+SCRATCH.md
+LINKEDIN_POSTS.md
+
 # Temporary files
 *.tmp
 *.temp
