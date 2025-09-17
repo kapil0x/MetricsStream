@@ -32,9 +32,11 @@ MetricStream is a production-ready metrics system that handles high-velocity tim
 
 | Phase | Throughput | Latency | Scaling Model |
 |-------|------------|---------|---------------|
-| **MVP** | 10K metrics/second | <100ms | Single instance |
+| **MVP** | ~200 requests/second (localhost) | <50ms | Sequential processing |
 | **Scale** | 100K metrics/second | <50ms | Horizontal scaling |
 | **Enterprise** | 1M+ metrics/second | <10ms | Multi-tenant clusters |
+
+**Note:** Current MVP uses sequential request processing. Each request can contain multiple metrics in batches, so 200 requests × 50 metrics/request = 10K metrics/second throughput potential.
 
 ## Architecture
 
@@ -370,16 +372,17 @@ std::unique_ptr<HttpServer> server_;
 
 ## Architecture Decisions
 
-### 1. Thread-Per-Request Model
+### 1. Sequential Request Processing Model
 
-**Decision**: Use thread-per-request rather than async I/O.
+**Decision**: Use sequential request processing in single thread rather than async I/O or thread-per-request.
 
 **Rationale**: 
-- Simpler implementation for MVP
-- Better CPU utilization for compute-heavy validation
-- Clear upgrade path to thread pools
+- Simplest possible implementation for MVP
+- Low memory footprint (single thread)
+- Easy debugging and development
+- Clear upgrade path to concurrent processing
 
-**Trade-offs**: Higher memory usage per connection, but acceptable for target load.
+**Trade-offs**: Limited throughput (~200 RPS), but sufficient for development and testing.
 
 ### 2. Lockless Rate Limiting
 
