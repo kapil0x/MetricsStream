@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MetricStream is an educational platform for learning performance optimization, concurrency, system design, and scalable architecture patterns. Built as a metrics collection system, it serves as a hands-on laboratory for exploring async programming, load testing, and distributed systems concepts without the complexity of production monitoring platforms.
 
-## Principal Engineer Learning Objectives
+## Learning Objectives
 
-This project is designed for deep technical mastery and principal engineer-level system design skills:
+This project is designed for deep technical mastery and system design skills:
 
 ### **Core System Design Mastery**
 - **Performance Engineering**: CPU profiling, memory optimization, I/O bottleneck analysis
@@ -16,7 +16,7 @@ This project is designed for deep technical mastery and principal engineer-level
 - **Distributed Systems**: Consensus algorithms, CAP theorem trade-offs, failure mode analysis
 - **Architecture Evolution**: Monolith → microservices → event-driven → serverless patterns
 
-### **Principal Engineer Debugging Skills**
+### **Debugging Skills**
 - **Linux Performance Analysis**: perf, strace, tcpdump, eBPF for production debugging
 - **Memory Profiling**: Valgrind, AddressSanitizer, heap analysis, memory leak detection
 - **Network Debugging**: Wireshark packet analysis, TCP tuning, connection pooling
@@ -148,7 +148,7 @@ curl -X POST http://localhost:8080/metrics \
 - **Message Queues**: Direct file writes → Kafka → Stream processing  
 - **Horizontal Scaling**: Single server → Load balancer
 
-## Principal Engineer Learning Progression
+## Learning Progression
 
 ### **Phase 1: Sequential → Concurrent Processing** ✅
 - **Problem**: Single-threaded server, connection queue overflow
