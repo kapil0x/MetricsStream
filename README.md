@@ -42,9 +42,10 @@ cat metrics.jsonl
 - Test client for validation
 
 **Performance:**
-- ~200 requests/second (sequential processing)
+- ~200 requests/second (current sequential processing)
+- **Goal**: Scale to 10,000 requests/second
 - Each request can contain multiple metrics in batches
-- Single-threaded MVP design for simplicity
+- Single-threaded MVP design for learning simplicity
 
 ## API Examples
 
@@ -116,6 +117,62 @@ write_index.store(idx + 1);
 - Handles nested objects and arrays
 - Error handling and validation
 
+## Scaling to 10K RPS
+
+**Current State**: 200 RPS (sequential processing)  
+**Target**: 10,000 RPS
+
+### Scaling Options:
+
+**Option A: Thread Pool (Single Machine)**
+```cpp
+ThreadPool pool(100);  // 100 worker threads
+while (running_) {
+    int client = accept(server_fd, ...);
+    pool.submit([client]() {
+        process_request(client);  // Each thread handles ~100 RPS
+    });
+}
+```
+- **Capacity**: 100 threads × 100 RPS = 10K RPS ✅
+- **Hardware**: 8-16 cores, 16GB RAM
+- **Pros**: Single machine, easier deployment
+- **Cons**: Thread overhead, context switching
+
+**Option B: Async I/O (Single Machine)**
+```cpp
+int epoll_fd = epoll_create1(0);
+while (running_) {
+    int events = epoll_wait(epoll_fd, events_buf, MAX_EVENTS, -1);
+    for (int i = 0; i < events; ++i) {
+        handle_event_non_blocking(events_buf[i]);
+    }
+}
+```
+- **Capacity**: Single thread handling 10K+ connections ✅
+- **Hardware**: 4-8 cores, 8GB RAM
+- **Pros**: Lower memory, highest performance
+- **Cons**: Complex programming model
+
+**Option C: Horizontal Scaling (Multiple Machines)**
+```
+Load Balancer → [Server1: 2K RPS] 
+              → [Server2: 2K RPS]
+              → [Server3: 2K RPS] 
+              → [Server4: 2K RPS]
+              → [Server5: 2K RPS]
+              = 10K RPS total
+```
+- **Capacity**: 5 machines × 2K RPS each = 10K RPS ✅
+- **Hardware**: 5 modest servers (4 cores, 8GB each)
+- **Pros**: Fault tolerance, easier scaling
+- **Cons**: Network complexity, data consistency
+
+### Recommended Learning Path:
+1. **Start with Thread Pool** (easiest to implement)
+2. **Try Async I/O** (best performance)
+3. **Experiment with Distribution** (real-world scaling)
+
 ## Learning Path
 
 ### Phase 1: Current MVP ✅
@@ -124,11 +181,12 @@ write_index.store(idx + 1);
 - JSON parsing
 - File storage
 
-### Phase 2: Concurrency
-- Thread-per-request model
-- Thread pools
-- Connection management
-- Performance testing
+### Phase 2: Concurrency (Target: 10K RPS)
+- **Option A**: Thread pool (100 threads) - Single machine
+- **Option B**: Async I/O with epoll/kqueue - Single machine  
+- **Option C**: Load balancer + multiple servers - Distributed
+- Connection pooling and keep-alive
+- Performance benchmarking and profiling
 
 ### Phase 3: Streaming
 - Message queue integration (Kafka)
