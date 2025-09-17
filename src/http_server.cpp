@@ -81,20 +81,23 @@ void HttpServer::run_server() {
             continue;
         }
 
-        // Read request
-        char buffer[4096] = {0};
-        ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
-        
-        if (bytes_read > 0) {
-            std::string request_data(buffer, bytes_read);
-            HttpRequest request = parse_request(request_data);
-            HttpResponse response = handle_request(request);
+        // Process request in separate thread for concurrency
+        std::thread([this, client_socket]() {
+            // Read request
+            char buffer[4096] = {0};
+            ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
             
-            std::string response_str = format_response(response);
-            write(client_socket, response_str.c_str(), response_str.length());
-        }
+            if (bytes_read > 0) {
+                std::string request_data(buffer, bytes_read);
+                HttpRequest request = parse_request(request_data);
+                HttpResponse response = handle_request(request);
+                
+                std::string response_str = format_response(response);
+                write(client_socket, response_str.c_str(), response_str.length());
+            }
 
-        close(client_socket);
+            close(client_socket);
+        }).detach(); // Detach thread to handle request independently
     }
 
     close(server_fd);
