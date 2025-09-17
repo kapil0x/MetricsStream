@@ -217,7 +217,6 @@ Load Balancer → [Server1: 2K RPS]
 - **Horizontal Auto-scaling** (container orchestration)
 - **Load Balancing** (consistent hashing)
 - **Service Discovery** (health checks)
-- **Cross-region Replication** (global availability)
 
 ## Key Files
 
@@ -287,4 +286,3 @@ This is a learning project! Contributions welcome:
 - [System Design Primer](https://github.com/donnemartin/system-design-primer)
 - [C++ Concurrency in Action](https://www.manning.com/books/c-plus-plus-concurrency-in-action)
 - [Designing Data-Intensive Applications](https://dataintensive.net/)
-- [High Performance Browser Networking](https://hpbn.co/)
