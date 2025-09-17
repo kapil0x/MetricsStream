@@ -45,7 +45,7 @@ cat metrics.jsonl
 
 **What's Built (Production Patterns):**
 - **HTTP Server** - Raw socket implementation (like nginx/Apache internals)
-- **Rate Limiting** - Sliding window algorithm (used by Twitter/GitHub APIs) 
+- **Rate Limiting** - Sliding window algorithm 
 - **JSON Processing** - Custom parser (zero dependencies, like embedded systems)
 - **Storage Layer** - JSON Lines format (similar to log aggregators)
 - **Monitoring** - Statistics endpoints (like Prometheus /metrics)
@@ -201,23 +201,23 @@ Load Balancer → [Server1: 2K RPS]
 - Connection pooling and keep-alive
 - Performance benchmarking and profiling
 
-### Phase 3: Streaming (Netflix/Uber Scale)
-- **Message Queue Integration** (Kafka - like LinkedIn's architecture)
-- **Stream Processing** (real-time aggregation - like Twitter's infrastructure) 
+### Phase 3: Streaming
+- **Message Queue Integration** (Kafka)
+- **Stream Processing** (real-time aggregation) 
 - **Event-driven Architecture** (microservices communication)
-- **Data Partitioning** (sharding strategies used by Facebook)
+- **Data Partitioning** (sharding strategies)
 
-### Phase 4: Storage (Datadog/Prometheus Scale)
-- **Time-series Database** (ClickHouse - used by Cloudflare, Uber)
-- **Data Retention Policies** (automated cleanup - like AWS CloudWatch)
+### Phase 4: Storage
+- **Time-series Database** (ClickHouse integration)
+- **Data Retention Policies** (automated cleanup)
 - **Query Optimization** (indexing strategies - like Elasticsearch)
 - **Compression** (storage efficiency - like InfluxDB)
 
-### Phase 5: Distribution (Google/Amazon Scale)
+### Phase 5: Distribution
 - **Horizontal Auto-scaling** (Kubernetes-style orchestration)
-- **Load Balancing** (consistent hashing - like Cassandra)
-- **Service Discovery** (health checks - like Consul/etcd)
-- **Cross-region Replication** (global availability - like AWS)
+- **Load Balancing** (consistent hashing)
+- **Service Discovery** (health checks)
+- **Cross-region Replication** (global availability)
 
 ## Key Files
 
