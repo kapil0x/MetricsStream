@@ -37,3 +37,6 @@ LINKEDIN_POSTS.md
 # Temporary files
 *.tmp
 *.temp
+
+# Conversation notes and discussion files
+conversation/

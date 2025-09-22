@@ -107,6 +107,7 @@ private:
     HttpResponse handle_metrics_get(const HttpRequest& request);
     
     // Helper methods
+    MetricBatch parse_json_metrics_optimized(const std::string& json_body);
     MetricBatch parse_json_metrics(const std::string& json_body);
     Metric parse_single_metric(const std::string& metric_json);
     std::string extract_string_field(const std::string& json, const std::string& field);

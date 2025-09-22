@@ -162,11 +162,11 @@ curl -X POST http://localhost:8080/metrics \
 - **Result**: 50 clients: 59% → 66% success rate, reduced latency 10%
 - **Learning**: I/O serialization creates convoy effects under load
 
-### **Phase 3: JSON Parsing Optimization** 🔄 (Current)
-- **Problem**: String operations create memory pressure at high concurrency
-- **Current**: 100 clients: 35% success rate, 3.2ms latency
-- **Target**: Optimize string allocations, consider JSON library
-- **Learning**: CPU-intensive operations become bottlenecks after I/O optimization
+### **Phase 3: JSON Parsing Optimization** ✅
+- **Problem**: Multiple string::find() operations and substr() allocations per field
+- **Solution**: Single-pass parser with pre-allocated buffers and direct numeric parsing
+- **Result**: 100 clients: 80.2% success rate, 2.73ms latency (significant improvement)
+- **Learning**: O(n²) string operations become critical bottlenecks under high concurrency
 
 ### **Phase 4: Memory & Threading Limits** (Next)
 - **Target**: Identify thread creation overhead, memory allocation patterns
@@ -181,6 +181,36 @@ curl -X POST http://localhost:8080/metrics \
 - **Learning**: CAP theorem trade-offs, consistency patterns
 
 Each phase includes hands-on debugging scenarios and architecture decision documentation.
+
+## Performance Tracking Best Practices
+
+**CRITICAL**: Always capture baseline performance before optimization to measure actual impact:
+
+```bash
+# Before each optimization phase, record baseline:
+./build/load_test 8080 50 10   # Baseline test
+./build/load_test 8080 100 10  # Stress test
+./build/load_test 8080 150 8   # Breaking point test
+
+# Document results in performance_results.txt:
+# Phase X Baseline: 50 clients → Y% success, Z.Zms latency
+# Phase X After: 50 clients → Y% success, Z.Zms latency
+# Improvement: +X% success rate, -Y% latency
+```
+
+**Why This Matters**:
+- Proves optimization effectiveness with concrete numbers
+- Prevents premature optimization (measure first, optimize second) 
+- Identifies when bottleneck has shifted to different component
+- Enables rollback decisions if optimization introduces regressions
+
+**Performance Progression Template**:
+- **Problem**: Specific bottleneck identification  
+- **Solution**: Concrete implementation approach
+- **Result**: Before/after metrics with percentage improvements
+- **Learning**: Fundamental concept or pattern learned
+
+This systematic approach ensures each optimization phase builds measurable value.
 
 ## Debugging and Observability
 

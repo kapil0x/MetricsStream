@@ -215,7 +215,7 @@ HttpResponse IngestionService::handle_metrics_post(const HttpRequest& request) {
     }
     
     try {
-        MetricBatch batch = parse_json_metrics(request.body);
+        MetricBatch batch = parse_json_metrics_optimized(request.body);
         
         auto validation_result = validator_->validate_batch(batch);
         if (!validation_result.valid) {
@@ -262,6 +262,190 @@ HttpResponse IngestionService::handle_metrics_get(const HttpRequest& request) {
         "}";
     
     return response;
+}
+
+MetricBatch IngestionService::parse_json_metrics_optimized(const std::string& json_body) {
+    MetricBatch batch;
+    
+    enum class ParseState {
+        LOOKING_FOR_METRICS,
+        IN_METRICS_ARRAY,
+        IN_METRIC_OBJECT,
+        PARSING_FIELD_NAME,
+        PARSING_STRING_VALUE,
+        PARSING_NUMBER_VALUE,
+        IN_TAGS_OBJECT,
+        DONE
+    };
+    
+    ParseState state = ParseState::LOOKING_FOR_METRICS;
+    size_t i = 0;
+    const size_t len = json_body.length();
+    
+    // Pre-allocated buffers to avoid string allocations
+    std::string current_field;
+    std::string current_value;
+    current_field.reserve(32);
+    current_value.reserve(128);
+    
+    // Current metric being parsed
+    std::string metric_name, metric_type = "gauge";
+    double metric_value = 0.0;
+    Tags metric_tags;
+    metric_name.reserve(64);
+    metric_type.reserve(16);
+    
+    auto skip_whitespace = [&]() {
+        while (i < len && std::isspace(json_body[i])) i++;
+    };
+    
+    auto parse_string = [&](std::string& result) {
+        result.clear();
+        if (i >= len || json_body[i] != '"') return false;
+        i++; // skip opening quote
+        
+        while (i < len && json_body[i] != '"') {
+            if (json_body[i] == '\\' && i + 1 < len) {
+                i++; // skip escape char
+                if (json_body[i] == 'n') result += '\n';
+                else if (json_body[i] == 't') result += '\t';
+                else if (json_body[i] == 'r') result += '\r';
+                else result += json_body[i];
+            } else {
+                result += json_body[i];
+            }
+            i++;
+        }
+        
+        if (i < len && json_body[i] == '"') {
+            i++; // skip closing quote
+            return true;
+        }
+        return false;
+    };
+    
+    auto parse_number = [&]() -> double {
+        size_t start = i;
+        if (i < len && json_body[i] == '-') i++;
+        while (i < len && (std::isdigit(json_body[i]) || json_body[i] == '.')) i++;
+        
+        if (start == i) return 0.0;
+        
+        // Use string_view equivalent to avoid allocation
+        const char* start_ptr = json_body.data() + start;
+        const char* end_ptr = json_body.data() + i;
+        return std::strtod(start_ptr, const_cast<char**>(&end_ptr));
+    };
+    
+    while (i < len && state != ParseState::DONE) {
+        skip_whitespace();
+        if (i >= len) break;
+        
+        char c = json_body[i];
+        
+        switch (state) {
+            case ParseState::LOOKING_FOR_METRICS:
+                if (c == '"') {
+                    if (parse_string(current_field) && current_field == "metrics") {
+                        skip_whitespace();
+                        if (i < len && json_body[i] == ':') {
+                            i++;
+                            skip_whitespace();
+                            if (i < len && json_body[i] == '[') {
+                                i++;
+                                state = ParseState::IN_METRICS_ARRAY;
+                            }
+                        }
+                    }
+                } else {
+                    i++;
+                }
+                break;
+                
+            case ParseState::IN_METRICS_ARRAY:
+                if (c == '{') {
+                    i++;
+                    state = ParseState::IN_METRIC_OBJECT;
+                    // Reset metric data
+                    metric_name.clear();
+                    metric_type = "gauge";
+                    metric_value = 0.0;
+                    metric_tags.clear();
+                } else if (c == ']') {
+                    state = ParseState::DONE;
+                } else {
+                    i++;
+                }
+                break;
+                
+            case ParseState::IN_METRIC_OBJECT:
+                if (c == '"') {
+                    if (parse_string(current_field)) {
+                        skip_whitespace();
+                        if (i < len && json_body[i] == ':') {
+                            i++;
+                            skip_whitespace();
+                            
+                            if (current_field == "name" || current_field == "type") {
+                                if (parse_string(current_value)) {
+                                    if (current_field == "name") {
+                                        metric_name = std::move(current_value);
+                                    } else {
+                                        metric_type = std::move(current_value);
+                                    }
+                                }
+                            } else if (current_field == "value") {
+                                metric_value = parse_number();
+                            } else if (current_field == "tags" && i < len && json_body[i] == '{') {
+                                i++;
+                                state = ParseState::IN_TAGS_OBJECT;
+                            }
+                        }
+                    }
+                } else if (c == '}') {
+                    // Finished parsing metric object
+                    if (!metric_name.empty()) {
+                        MetricType type = MetricType::GAUGE;
+                        if (metric_type == "counter") type = MetricType::COUNTER;
+                        else if (metric_type == "histogram") type = MetricType::HISTOGRAM;
+                        else if (metric_type == "summary") type = MetricType::SUMMARY;
+                        
+                        batch.add_metric(Metric(std::move(metric_name), metric_value, type, std::move(metric_tags)));
+                    }
+                    i++;
+                    state = ParseState::IN_METRICS_ARRAY;
+                } else {
+                    i++;
+                }
+                break;
+                
+            case ParseState::IN_TAGS_OBJECT:
+                if (c == '"') {
+                    if (parse_string(current_field)) {
+                        skip_whitespace();
+                        if (i < len && json_body[i] == ':') {
+                            i++;
+                            skip_whitespace();
+                            if (parse_string(current_value)) {
+                                metric_tags[std::move(current_field)] = std::move(current_value);
+                            }
+                        }
+                    }
+                } else if (c == '}') {
+                    i++;
+                    state = ParseState::IN_METRIC_OBJECT;
+                } else {
+                    i++;
+                }
+                break;
+                
+            default:
+                i++;
+                break;
+        }
+    }
+    
+    return batch;
 }
 
 MetricBatch IngestionService::parse_json_metrics(const std::string& json_body) {
