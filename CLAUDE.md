@@ -1,275 +1,134 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working with this codebase.
 
 ## Project Overview
 
-MetricStream is an educational platform for learning performance optimization, concurrency, system design, and scalable architecture patterns. Built as a metrics collection system, it serves as a hands-on laboratory for exploring async programming, load testing, and distributed systems concepts without the complexity of production monitoring platforms.
+MetricStream - A metrics collection system for exploring performance optimization and concurrent programming. Focus is on understanding bottlenecks and systematic optimization rather than feature completeness.
 
-## Learning Objectives
+## Approach
 
-This project is designed for deep technical mastery and system design skills:
+This is a space to focus on craft - the tough engineering problems that push learning. With Claude Code, we can skip boilerplate and dive into the interesting parts:
 
-### **Core System Design Mastery**
-- **Performance Engineering**: CPU profiling, memory optimization, I/O bottleneck analysis
-- **Concurrency Deep Dive**: Lock-free programming, memory models, async runtime design
-- **Distributed Systems**: Consensus algorithms, CAP theorem trade-offs, failure mode analysis
-- **Architecture Evolution**: Monolith → microservices → event-driven → serverless patterns
+- Performance bottleneck identification and resolution
+- Concurrent programming patterns and race condition analysis  
+- Memory layout and allocation optimization
+- Systematic measurement and optimization methodology
 
-### **Debugging Skills**
-- **Linux Performance Analysis**: perf, strace, tcpdump, eBPF for production debugging
-- **Memory Profiling**: Valgrind, AddressSanitizer, heap analysis, memory leak detection
-- **Network Debugging**: Wireshark packet analysis, TCP tuning, connection pooling
-- **Distributed Tracing**: Correlating failures across service boundaries
+The goal is deep understanding through building and measuring real systems.
 
-### **Production Engineering Excellence**
-- **Observability Design**: Metrics design patterns, alerting strategies, SLI/SLO implementation
-- **Capacity Planning**: Load modeling, hardware sizing, cost optimization
-- **Failure Engineering**: Chaos testing, circuit breakers, graceful degradation
-- **Performance Tuning**: Kernel parameters, GC tuning, database optimization
+## Current Implementation
 
-### **Advanced Technical Leadership**
-- **Architecture Decision Records**: Document trade-offs and reasoning
-- **Code Review Excellence**: Performance implications, security vulnerabilities
-- **Technical Mentoring**: Teaching through code examples and system design
+Built from first principles, optimized phase by phase:
 
-The system serves as a hands-on laboratory for mastering these principal engineer competencies.
+- HTTP server from raw sockets
+- Sliding window rate limiting  
+- Custom JSON parser (zero dependencies)
+- Async file I/O with producer-consumer pattern
+- Load testing with systematic measurement
 
-## Architecture
+Each optimization phase targets a specific measured bottleneck.
 
-**Current Implementation (First-Principles Approach):**
-Started with the simplest possible approach and systematically optimized:
-
-- **HTTP Server**: Raw socket implementation with concurrent request handling
-- **Rate Limiting**: Sliding window algorithm with lockless metrics collection
-- **JSON Processing**: Custom parser for zero-dependency operation
-- **Storage**: JSON Lines file format with asynchronous batch writer
-- **Load Testing**: Multi-client load generator with realistic metric patterns
-
-**Architecture Evolution Journey:**
-1. **MVP**: Single-threaded HTTP → synchronous file I/O
-2. **Phase 1**: Added threading for concurrent request processing  
-3. **Phase 2**: Async I/O with producer-consumer pattern for file writes
-4. **Phase 3**: JSON parsing optimization (current focus)
-5. **Future**: Message queues, distributed storage, horizontal scaling
-
-## Current Implementation Structure
+## Code Structure
 
 ```
 src/
-├── main.cpp                    # Server startup and signal handling
-├── http_server.cpp            # Raw socket HTTP implementation
-├── ingestion_service.cpp      # Business logic, JSON parsing, async I/O
-└── metric.h                   # Core data structures
+├── main.cpp                  # Entry point
+├── http_server.cpp          # Socket handling
+├── ingestion_service.cpp    # Core logic, rate limiting, JSON parsing
+└── metric.h                 # Data structures
 
-include/
-├── http_server.h             # HTTP server interface  
-├── ingestion_service.h       # Service definitions and async writer
-└── metric.h                  # Metric types and data structures
-
-Performance Testing:
-├── load_test.cpp             # Multi-client load generator
-├── performance_test.sh       # Systematic RPS testing (100→2500)
-└── monitor_load_test.sh      # System monitoring during tests
-
-Build:
-├── CMakeLists.txt           # Build configuration
-└── build/                   # Compiled binaries and metrics data
+load_test.cpp               # Performance testing
+performance_test.sh         # Systematic load testing
 ```
 
-## Development Commands
+## Commands
 
-### Build System
-The project uses CMake for building:
 ```bash
+# Build
 mkdir build && cd build
-cmake ..
-make -j$(nproc)
+cmake .. && make
+
+# Run
+./metricstream_server
+
+# Test
+./load_test 8080 50 10    # 50 clients, 10 requests each
+./performance_test.sh     # Systematic load testing
 ```
 
-### Testing
-```bash
-# Run all tests
-make test
+## Data Flow
 
-# Run specific test suite
-ctest -R "ingestion_tests"
+1. HTTP request → rate limiting check
+2. JSON parsing → validation  
+3. Async queue for file writing
+4. Background thread writes to `metrics.jsonl`
+5. HTTP response (non-blocking)
 
-# Run with coverage
-make coverage
-```
+Key optimizations: threading per request, producer-consumer I/O, lock-free metrics collection.
 
-### Running the Server
-```bash
-# Start the metrics server
-./build/metricstream_server
+## Design Decisions
 
-# Test with single request
-curl -X POST http://localhost:8080/metrics \
-  -H "Content-Type: application/json" \
-  -H "Authorization: test_client" \
-  -d '{"metrics":[{"name":"cpu_usage","value":75.5,"type":"gauge"}]}'
+- Zero dependencies (custom HTTP, JSON parsing)
+- File-first storage (simple before distributed)
+- Measure everything (performance_results.txt)
+- Optimize based on bottlenecks, not assumptions
+- Document each optimization phase with concrete metrics
 
-# Run load tests
-./build/load_test 8080 50 10 100  # 50 clients, 10 req/client, 100ms interval
+## Optimization Phases
 
-# Monitor performance
-./performance_test.sh  # Systematic 100→2500 RPS testing
-```
+**Phase 1**: Threading per request  
+- 20 clients: 81% → 88% success rate
 
-## Current Data Flow
+**Phase 2**: Async I/O with producer-consumer  
+- 50 clients: 59% → 66% success rate
 
-**Current Implementation (File-Based):**
-1. **HTTP Request**: Client sends JSON metrics via POST to `/metrics`
-2. **Rate Limiting**: Sliding window algorithm checks per-client request limits
-3. **JSON Parsing**: Custom parser extracts metrics without external dependencies
-4. **Validation**: Metric names, values, and types validated
-5. **Async Queuing**: Metrics queued for background writer (no blocking)
-6. **File Storage**: Background thread writes JSON Lines to `metrics.jsonl`
-7. **Response**: Fast HTTP response while file I/O happens asynchronously
+**Phase 3**: JSON parsing optimization (O(n²) → O(n))  
+- 100 clients: 80.2% success rate, 2.73ms latency
 
-**Key Performance Optimizations:**
-- **Threading**: Each HTTP request processed concurrently
-- **Producer-Consumer**: Request threads queue, writer thread processes
-- **Zero-Copy**: Minimal string allocations where possible
-- **Lock-Free Metrics**: Rate limiter uses ring buffer for stats
+**Phase 4**: Hash-based per-client mutex optimization (current)  
+- Target: eliminate double mutex bottleneck
+- Expected: 95%+ success at 100 clients
 
-## Key Design Decisions
+Each phase targets the measured bottleneck, not theoretical improvements.
 
-**Current Phase (First-Principles):**
-- **File-First Approach**: Start simple before distributed complexity  
-- **Zero Dependencies**: Custom JSON parser, raw socket HTTP server
-- **Performance Focused**: Each optimization measured with concrete metrics
-- **Educational**: Document bottlenecks and solutions for learning
-- **Concurrent Design**: Threading → Async I/O → Memory optimization progression
+## Performance Methodology
 
-**Future Evolution:**
-- **Distributed Storage**: Multiple files → Database → Distributed storage
-- **Message Queues**: Direct file writes → Kafka → Stream processing  
-- **Horizontal Scaling**: Single server → Load balancer
-
-## Learning Progression
-
-### **Phase 1: Sequential → Concurrent Processing** ✅
-- **Problem**: Single-threaded server, connection queue overflow
-- **Solution**: Threading per request for concurrent handling
-- **Result**: 20 clients: 81% → 88% success rate (+7% improvement)
-- **Learning**: Connection handling vs request processing bottlenecks
-
-### **Phase 2: Sync → Async I/O** ✅  
-- **Problem**: File mutex serialization, threads waiting for I/O
-- **Solution**: Producer-consumer pattern with background writer
-- **Result**: 50 clients: 59% → 66% success rate, reduced latency 10%
-- **Learning**: I/O serialization creates convoy effects under load
-
-### **Phase 3: JSON Parsing Optimization** ✅
-- **Problem**: Multiple string::find() operations and substr() allocations per field
-- **Solution**: Single-pass parser with pre-allocated buffers and direct numeric parsing
-- **Result**: 100 clients: 80.2% success rate, 2.73ms latency (significant improvement)
-- **Learning**: O(n²) string operations become critical bottlenecks under high concurrency
-
-### **Phase 4: Memory & Threading Limits** (Next)
-- **Target**: Identify thread creation overhead, memory allocation patterns
-- **Skills**: Memory profiling, thread pool optimization
-- **Tools**: Valgrind, memory sanitizers, thread analysis
-- **Learning**: Resource limits vs algorithmic optimization
-
-### **Phase 5: Distributed Architecture** (Future)
-- **Target**: 10K+ req/sec with horizontal scaling
-- **Skills**: Message queues, load balancing, distributed storage
-- **Tools**: Kafka, distributed tracing, chaos engineering  
-- **Learning**: CAP theorem trade-offs, consistency patterns
-
-Each phase includes hands-on debugging scenarios and architecture decision documentation.
-
-## Performance Tracking Best Practices
-
-**CRITICAL**: Always capture baseline performance before optimization to measure actual impact:
+Always measure before optimizing:
 
 ```bash
-# Before each optimization phase, record baseline:
-./build/load_test 8080 50 10   # Baseline test
-./build/load_test 8080 100 10  # Stress test
-./build/load_test 8080 150 8   # Breaking point test
+# Baseline
+./build/load_test 8080 50 10
+./build/load_test 8080 100 10
+./build/load_test 8080 150 8
 
-# Document results in performance_results.txt:
-# Phase X Baseline: 50 clients → Y% success, Z.Zms latency
-# Phase X After: 50 clients → Y% success, Z.Zms latency
-# Improvement: +X% success rate, -Y% latency
+# Document in performance_results.txt
+# Phase X: 50 clients → Y% success, Z.Zms latency
 ```
 
-**Why This Matters**:
-- Proves optimization effectiveness with concrete numbers
-- Prevents premature optimization (measure first, optimize second) 
-- Identifies when bottleneck has shifted to different component
-- Enables rollback decisions if optimization introduces regressions
+Template for each optimization:
+- **Problem**: Specific bottleneck
+- **Solution**: Implementation approach
+- **Result**: Before/after measurements
+- **Learning**: Key insight gained
 
-**Performance Progression Template**:
-- **Problem**: Specific bottleneck identification  
-- **Solution**: Concrete implementation approach
-- **Result**: Before/after metrics with percentage improvements
-- **Learning**: Fundamental concept or pattern learned
+Measure first, optimize second.
 
-This systematic approach ensures each optimization phase builds measurable value.
+## Storage
 
-## Debugging and Observability
-
-The system implements distributed tracing with correlation IDs:
-- All requests tagged with X-Correlation-ID header
-- Jaeger tracing across all components
-- Structured logging with correlation context
-- Prometheus metrics for all services
-- Grafana dashboards for system monitoring
-
-## Component Testing Strategy
-
-- **Unit Tests (70%)**: Fast, isolated testing with mocked dependencies
-- **Integration Tests (25%)**: Component interaction testing with real databases
-- **End-to-End Tests (5%)**: Full workflow validation in production-like environment
-
-Each component maintains >90% test coverage with automated CI pipeline validation.
-
-## Current Storage Implementation
-
-### JSON Lines File Format
-```bash
-# Each metric stored as one JSON object per line in metrics.jsonl
-{"timestamp":"2025-09-17T13:45:23.123Z","name":"cpu_usage","value":75.5,"type":"gauge","tags":{"host":"server1"}}
-{"timestamp":"2025-09-17T13:45:23.124Z","name":"memory_usage","value":4500000000,"type":"gauge","tags":{"host":"server1"}}
+JSON Lines format in `metrics.jsonl`:
+```json
+{"timestamp":"2025-09-17T13:45:23.123Z","name":"cpu_usage","value":75.5}
 ```
 
-**Design Benefits:**
-- **Append-only**: Fast writes, no file locking complexity
-- **Human readable**: Easy debugging and analysis  
-- **Streaming friendly**: Can process line by line
-- **Simple recovery**: Corrupted lines don't affect others
+Benefits: append-only, human readable, streaming friendly
+Limitations: single file, no indexing
 
-**Current Limitations:**
-- **Single file**: Becomes bottleneck at very high volume
-- **No indexing**: Linear scan for queries
-- **No compression**: Storage efficiency could improve
+## Security
 
-**Future Evolution:**
-- **Multiple files**: Partition by time/client for parallel writes
-- **Database storage**: Time-series DB when file system limits reached
-- **Compression**: LZ4/Snappy for storage efficiency
+Current: rate limiting, input validation, simple auth headers
+Missing: TLS, real authentication (development focus for now)
 
-## Current Security Implementation
+## Current Focus
 
-**Basic Security (Current):**
-- **Rate Limiting**: Per-client sliding window to prevent abuse
-- **Input Validation**: JSON parsing with bounds checking  
-- **Authorization Header**: Simple client identification via `Authorization` header
-- **Resource Limits**: Connection limits, request size limits
-
-**Missing (Future Improvements):**
-- **TLS/HTTPS**: Currently HTTP only for development simplicity
-- **Authentication**: Real auth vs simple header-based identification  
-- **Input Sanitization**: More robust validation and attack prevention
-- **Monitoring**: Security event logging and alerting
-
-**Educational Focus:**
-- Learn rate limiting algorithms first
-- Add TLS when moving to production deployment
-- Implement proper auth when adding user management
-- Security complexity grows with system maturity
+Phase 4: Hash-based per-client mutex optimization to eliminate double mutex bottleneck in rate limiting. See TODO(human) in `flush_metrics()` for contribution opportunity.
