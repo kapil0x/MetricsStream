@@ -13,6 +13,7 @@
 #include <fstream>
 #include <queue>
 #include <condition_variable>
+#include <functional>
 #include <thread>
 
 namespace metricstream {
@@ -53,13 +54,18 @@ public:
 private:
     size_t max_requests_;
     
+    // Hash-based per-client mutex pool (Phase 4 optimization)
+    static constexpr size_t MUTEX_POOL_SIZE = 10007;  // Prime number for better distribution
+    std::array<std::mutex, MUTEX_POOL_SIZE> client_mutex_pool_;
+    
     // Rate limiting data structures
     std::unordered_map<std::string, std::deque<std::chrono::time_point<std::chrono::steady_clock>>> client_requests_;
-    std::mutex rate_limiter_mutex_;
     
-    // Metrics collection data structures
+    // Metrics collection data structures  
     std::unordered_map<std::string, ClientMetrics> client_metrics_;
-    std::mutex metrics_mutex_;
+    
+    // Helper method to get client-specific mutex
+    std::mutex& get_client_mutex(const std::string& client_id);
     
     void send_to_monitoring(const std::string& client_id, 
                            const std::chrono::time_point<std::chrono::steady_clock>& timestamp, 

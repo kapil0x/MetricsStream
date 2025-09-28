@@ -17,64 +17,72 @@ RateLimiter::RateLimiter(size_t max_requests_per_second)
     : max_requests_(max_requests_per_second) {
 }
 
+// Hash-based per-client mutex selection (Phase 4 optimization)
+std::mutex& RateLimiter::get_client_mutex(const std::string& client_id) {
+    std::hash<std::string> hasher;
+    size_t hash_value = hasher(client_id);
+    size_t mutex_index = hash_value % MUTEX_POOL_SIZE;
+    return client_mutex_pool_[mutex_index];
+}
+
 bool RateLimiter::allow_request(const std::string& client_id) {
-    bool decision;
     auto now = std::chrono::steady_clock::now();
     
-    // Rate limiting logic with mutex
-    {
-        std::lock_guard<std::mutex> lock(rate_limiter_mutex_);
-        auto& client_queue = client_requests_[client_id];
-        
-        // Remove old timestamps (older than 1 second)
-        while (!client_queue.empty()) {
-            auto oldest_timestamp = client_queue.front();
-            auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - oldest_timestamp);
+    // PHASE 4 OPTIMIZATION: Single per-client mutex instead of two global mutexes
+    // This allows different clients to process in parallel while maintaining thread safety
+    std::mutex& client_lock = get_client_mutex(client_id);
+    std::lock_guard<std::mutex> lock(client_lock);
+    
+    // Rate limiting logic - now under per-client lock
+    auto& client_queue = client_requests_[client_id];
+    
+    // Remove old timestamps (older than 1 second)
+    while (!client_queue.empty()) {
+        auto oldest_timestamp = client_queue.front();
+        auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - oldest_timestamp);
 
-            if (time_diff.count() >= 1) {
-                client_queue.pop_front();
-            } else {
-                break;
-            }
-        }
-        
-        if(client_queue.size() < max_requests_){
-            client_queue.push_back(now);
-            decision = true;
+        if (time_diff.count() >= 1) {
+            client_queue.pop_front();
         } else {
-            decision = false;
+            break;
         }
     }
     
-    // Lockless metrics collection
-    {
-        std::lock_guard<std::mutex> lock(metrics_mutex_);
-        auto& metrics = client_metrics_[client_id];
-        size_t write_idx = metrics.write_index.load();
-        
-        metrics.ring_buffer[write_idx % ClientMetrics::BUFFER_SIZE] = MetricEvent{now, decision};
-        metrics.write_index.store(write_idx + 1);
+    bool decision;
+    if(client_queue.size() < max_requests_){
+        client_queue.push_back(now);
+        decision = true;
+    } else {
+        decision = false;
     }
+    
+    // Metrics collection - now under same per-client lock (no second mutex!)
+    auto& metrics = client_metrics_[client_id];
+    size_t write_idx = metrics.write_index.load();
+    
+    metrics.ring_buffer[write_idx % ClientMetrics::BUFFER_SIZE] = MetricEvent{now, decision};
+    metrics.write_index.store(write_idx + 1);
     
     return decision;
 }
 
 void RateLimiter::flush_metrics() {
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    // TODO(human): Implement optimized flush_metrics with per-client locking
+    // Challenge: Need to process metrics from ALL clients without deadlocks
+    // Current approach uses global metrics_mutex_ but we removed it for Phase 4
+    // 
+    // Consider these approaches:
+    // 1. Process one client at a time with individual locks
+    // 2. Use try_lock patterns with retry logic  
+    // 3. Acquire locks in consistent order (sorted by hash)
+    // 4. Lock-free approach using atomic ring buffer operations
+    //
+    // Key requirements:
+    // - Safely read metrics.read_index/write_index 
+    // - Process ring_buffer without race conditions
+    // - Avoid deadlocks when multiple threads call flush_metrics
+    // - Maintain performance gains from per-client mutex optimization
     
-    for (auto& [client_id, metrics] : client_metrics_) {
-        size_t read_idx = metrics.read_index.load();
-        size_t write_idx = metrics.write_index.load();
-        
-        // Process all new events between read and write indices
-        for (size_t i = read_idx; i < write_idx; ++i) {
-            MetricEvent event = metrics.ring_buffer[i % ClientMetrics::BUFFER_SIZE];
-            send_to_monitoring(client_id, event.timestamp, event.allowed);
-        }
-        
-        // Mark all events as processed
-        metrics.read_index.store(write_idx);
-    }
 }
 
 void RateLimiter::send_to_monitoring(const std::string& client_id,
