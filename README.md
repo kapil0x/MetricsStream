@@ -1,9 +1,10 @@
 # MetricStream
 
-A metrics collection system built to explore performance optimization and concurrent programming patterns. Learning through building and measuring.
+A comprehensive metrics platform built from first principles - like Prometheus or DataDog, but designed for learning the underlying engineering. Currently focused on the ingestion and rate limiting subsystem.
 
 ## What's Here
 
+**Current Component: Metrics Ingestion Service**
 - HTTP server from raw sockets
 - Rate limiting with sliding windows  
 - Custom JSON parser (zero dependencies)
@@ -11,6 +12,13 @@ A metrics collection system built to explore performance optimization and concur
 - Performance measurement and optimization
 
 Currently handles ~200 RPS. Working toward 10K RPS through systematic optimization.
+
+**Planned Components:**
+- Time-series storage engine
+- Query processing and aggregation
+- Alerting and notification system
+- Visualization and dashboards
+- Distributed architecture for horizontal scaling
 
 ## Data Flow
 

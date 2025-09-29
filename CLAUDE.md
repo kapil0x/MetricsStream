@@ -4,7 +4,7 @@ Guidance for Claude Code when working with this codebase.
 
 ## Project Overview
 
-MetricStream - A metrics collection system for exploring performance optimization and concurrent programming. Focus is on understanding bottlenecks and systematic optimization rather than feature completeness.
+MetricStream - A comprehensive metrics platform (like Prometheus/DataDog) built from first principles. Currently implementing the ingestion service component, with focus on performance optimization and concurrent programming. This is one component of a larger distributed metrics system.
 
 ## Approach
 
@@ -19,6 +19,7 @@ The goal is deep understanding through building and measuring real systems.
 
 ## Current Implementation
 
+**Component: Metrics Ingestion Service**
 Built from first principles, optimized phase by phase:
 
 - HTTP server from raw sockets
@@ -28,6 +29,13 @@ Built from first principles, optimized phase by phase:
 - Load testing with systematic measurement
 
 Each optimization phase targets a specific measured bottleneck.
+
+**Future Components:**
+- Time-series storage engine (ClickHouse integration)
+- Query processor and aggregation engine
+- Alerting and notification service
+- Web UI and dashboards
+- Distributed coordination and sharding
 
 ## Code Structure
 
