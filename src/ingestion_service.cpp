@@ -4,6 +4,8 @@
 #include <cmath>
 #include <iomanip>
 #include <ctime>
+#include <algorithm>
+#include <vector>
 
 namespace metricstream {
 
@@ -67,22 +69,82 @@ bool RateLimiter::allow_request(const std::string& client_id) {
 }
 
 void RateLimiter::flush_metrics() {
-    // TODO(human): Implement optimized flush_metrics with per-client locking
-    // Challenge: Need to process metrics from ALL clients without deadlocks
-    // Current approach uses global metrics_mutex_ but we removed it for Phase 4
-    // 
-    // Consider these approaches:
-    // 1. Process one client at a time with individual locks
-    // 2. Use try_lock patterns with retry logic  
-    // 3. Acquire locks in consistent order (sorted by hash)
-    // 4. Lock-free approach using atomic ring buffer operations
-    //
-    // Key requirements:
-    // - Safely read metrics.read_index/write_index 
-    // - Process ring_buffer without race conditions
-    // - Avoid deadlocks when multiple threads call flush_metrics
-    // - Maintain performance gains from per-client mutex optimization
+    // Phase 5: Deadlock prevention for multi-client metrics flushing
+    // Strategy: Consistent lock ordering + try-lock with exponential backoff
     
+    // Step 1: Create sorted list of clients to ensure consistent lock ordering
+    std::vector<std::string> client_ids;
+    {
+        // Brief lock to get snapshot of current clients
+        // Note: This assumes client_metrics_ itself needs protection during iteration
+        // In production, consider using concurrent hash maps or RCU patterns
+        static std::mutex client_list_mutex;
+        std::lock_guard<std::mutex> list_lock(client_list_mutex);
+        
+        client_ids.reserve(client_metrics_.size());
+        for (const auto& [client_id, _] : client_metrics_) {
+            client_ids.push_back(client_id);
+        }
+    }
+    
+    // Step 2: Sort by client_id to ensure consistent lock ordering across threads
+    // This prevents circular wait conditions that cause deadlocks
+    std::sort(client_ids.begin(), client_ids.end());
+    
+    // Step 3: Process each client with try-lock and exponential backoff
+    const int MAX_RETRIES = 3;
+    const auto BASE_DELAY = std::chrono::microseconds(10);
+    
+    for (const auto& client_id : client_ids) {
+        bool processed = false;
+        
+        for (int retry = 0; retry < MAX_RETRIES && !processed; ++retry) {
+            // Try to acquire client mutex without blocking
+            std::mutex& client_mutex = get_client_mutex(client_id);
+            std::unique_lock<std::mutex> lock(client_mutex, std::try_to_lock);
+            
+            if (lock.owns_lock()) {
+                // Successfully acquired lock - process this client's metrics
+                auto it = client_metrics_.find(client_id);
+                if (it != client_metrics_.end()) {
+                    auto& metrics = it->second;
+                    
+                    // Read current ring buffer state atomically
+                    size_t read_idx = metrics.read_index.load(std::memory_order_acquire);
+                    size_t write_idx = metrics.write_index.load(std::memory_order_acquire);
+                    
+                    // Process all events between read and write indices
+                    size_t events_processed = 0;
+                    for (size_t i = read_idx; i < write_idx; ++i) {
+                        const auto& event = metrics.ring_buffer[i % ClientMetrics::BUFFER_SIZE];
+                        
+                        // Send to monitoring (may involve I/O - do outside critical section would be better)
+                        send_to_monitoring(client_id, event.timestamp, event.allowed);
+                        events_processed++;
+                    }
+                    
+                    // Update read index to mark events as processed
+                    if (events_processed > 0) {
+                        metrics.read_index.store(write_idx, std::memory_order_release);
+                    }
+                }
+                processed = true;
+                
+            } else {
+                // Failed to acquire lock - exponential backoff before retry
+                if (retry < MAX_RETRIES - 1) {
+                    auto delay = BASE_DELAY * (1 << retry); // Exponential backoff: 10μs, 20μs, 40μs
+                    std::this_thread::sleep_for(delay);
+                }
+            }
+        }
+        
+        // If we couldn't process this client after retries, skip it this round
+        // This prevents one slow client from blocking the entire flush operation
+        if (!processed) {
+            // Could log this for monitoring: "Skipped client {} due to lock contention"
+        }
+    }
 }
 
 void RateLimiter::send_to_monitoring(const std::string& client_id,
