@@ -1,9 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/kapiljain/claude/test/metricstream/build/cmake_install.cmake",
-		"/Users/kapiljain/claude/test/metricstream/build/src/cmake_install.cmake",
-		"/Users/kapiljain/claude/test/metricstream/build/tests/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libingestion_lib.a CMakeFiles/ingestion_lib.dir/ingestion_service.cpp.o
-/usr/bin/ranlib libingestion_lib.a
