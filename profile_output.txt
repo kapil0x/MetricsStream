@@ -1,0 +1,14 @@
+Starting MetricStream server on port 8080
+HTTP server started on port 8080
+Ingestion service started
+[PROFILE] Wait: 1μs | Cleanup: 0μs (0 items) | Decision: 4μs | Total-in-lock: 5μs | Queue-size: 1
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 11
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 26
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 39
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 36
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 47
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 14
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 15
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 29
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 45
+[PROFILE] Wait: 0μs | Cleanup: 0μs (0 items) | Decision: 0μs | Total-in-lock: 0μs | Queue-size: 46

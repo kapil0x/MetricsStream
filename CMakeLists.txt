@@ -47,3 +47,12 @@ add_executable(test_client
 target_link_libraries(test_client
     Threads::Threads
 )
+
+# Create load test client
+add_executable(load_test
+    load_test.cpp
+)
+
+target_link_libraries(load_test
+    Threads::Threads
+)
