@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricStream Decision Tree</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        select {
+            padding: 6px 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+        }
+
+        #tree-container {
+            padding: 30px;
+            text-align: center;
+            min-height: 600px;
+        }
+
+        .node circle {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node.root circle {
+            fill: #2c3e50;
+            stroke: #34495e;
+            stroke-width: 3px;
+        }
+
+        .node.phase circle {
+            fill: #3498db;
+            stroke: #2980b9;
+            stroke-width: 2px;
+        }
+
+        .node.decision circle {
+            fill: #e74c3c;
+            stroke: #c0392b;
+            stroke-width: 2px;
+        }
+
+        .node.alternative circle {
+            fill: #95a5a6;
+            stroke: #7f8c8d;
+            stroke-width: 1px;
+        }
+
+        .node.alternative.chosen circle {
+            fill: #27ae60;
+            stroke: #229954;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            stroke-width: 4px;
+            transform: scale(1.1);
+        }
+
+        .node text {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            pointer-events: none;
+        }
+
+        .node.root text {
+            font-size: 14px;
+            font-weight: 600;
+            fill: #2c3e50;
+        }
+
+        .node.phase text {
+            font-size: 13px;
+            font-weight: 600;
+            fill: #2980b9;
+        }
+
+        .link {
+            fill: none;
+            stroke: #bdc3c7;
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .link.highlighted {
+            stroke: #3498db;
+            stroke-width: 3px;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 13px;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1000;
+            line-height: 1.4;
+        }
+
+        .tooltip h4 {
+            margin: 0 0 8px 0;
+            color: #3498db;
+            font-size: 14px;
+        }
+
+        .tooltip .problem {
+            margin-bottom: 8px;
+            color: #e74c3c;
+            font-weight: 500;
+        }
+
+        .tooltip .solution {
+            margin-bottom: 8px;
+            color: #27ae60;
+            font-weight: 500;
+        }
+
+        .tooltip .meta {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #555;
+            font-size: 11px;
+            color: #bdc3c7;
+        }
+
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .legend-circle {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+
+        .stats {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: left;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 MetricStream Decision Tree</h1>
+            <p>Interactive visualization of technical decisions and optimization journey</p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="layout-select">Layout:</label>
+                <select id="layout-select">
+                    <option value="tree">Tree Layout</option>
+                    <option value="cluster">Cluster Layout</option>
+                    <option value="radial">Radial Layout</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="depth-select">Show Depth:</label>
+                <select id="depth-select">
+                    <option value="1">Phases Only</option>
+                    <option value="2" selected>+ Decisions</option>
+                    <option value="3">+ Alternatives</option>
+                </select>
+            </div>
+            <button onclick="expandAll()">Expand All</button>
+            <button onclick="collapseAll()">Collapse All</button>
+            <button onclick="resetZoom()">Reset Zoom</button>
+            <button onclick="exportSVG()">Export SVG</button>
+        </div>
+
+        <div id="tree-container">
+            <svg id="tree-svg"></svg>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-circle" style="background: #2c3e50; border-color: #34495e;"></div>
+                <span>Root Project</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle" style="background: #3498db; border-color: #2980b9;"></div>
+                <span>Optimization Phase</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle" style="background: #e74c3c; border-color: #c0392b;"></div>
+                <span>Technical Decision</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle" style="background: #95a5a6; border-color: #7f8c8d;"></div>
+                <span>Alternative (Not Chosen)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle" style="background: #27ae60; border-color: #229954;"></div>
+                <span>Alternative (Chosen)</span>
+            </div>
+        </div>
+
+        <div class="stats" id="stats-container">
+            <!-- Stats will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div id="detail-panel" style="display: none; position: fixed; right: 20px; top: 100px; width: 400px; max-height: 80vh; overflow-y: auto; background: white; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); padding: 20px; z-index: 1000;">
+        <button onclick="closeDetailPanel()" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer;">✕</button>
+        <div id="detail-content"></div>
+    </div>
+
+    <script>
+        // Global variables
+        let treeData;
+        let svg, g, root;
+        let tree, cluster, diagonal;
+        let width = 1200, height = 800;
+        let currentLayout = 'tree';
+        let maxDepth = 2;
+
+        // Initialize the visualization
+        async function init() {
+            try {
+                // Try to load data from JSON file, fallback to sample data
+                const response = await fetch('decision_tree.json');
+                if (response.ok) {
+                    treeData = await response.json();
+                } else {
+                    treeData = getSampleData();
+                }
+            } catch (error) {
+                console.log('Using sample data');
+                treeData = getSampleData();
+            }
+
+            setupSVG();
+            updateVisualization();
+            updateStats();
+        }
+
+        function setupSVG() {
+            svg = d3.select("#tree-svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            g = svg.append("g")
+                .attr("transform", "translate(100,50)");
+
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.1, 3])
+                .on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                });
+
+            svg.call(zoom);
+
+            // Setup layouts
+            tree = d3.tree().size([height - 100, width - 200]);
+            cluster = d3.cluster().size([height - 100, width - 200]);
+            diagonal = d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x);
+        }
+
+        function updateVisualization() {
+            // Create hierarchy
+            root = d3.hierarchy(treeData);
+            
+            // Filter by depth
+            root.each(d => {
+                if (d.depth >= maxDepth) {
+                    d._children = d.children;
+                    d.children = null;
+                }
+            });
+
+            // Apply layout
+            const layoutFunc = currentLayout === 'cluster' ? cluster : tree;
+            layoutFunc(root);
+
+            // Update nodes
+            updateNodes();
+            updateLinks();
+        }
+
+        function updateNodes() {
+            const nodes = g.selectAll(".node")
+                .data(root.descendants(), d => d.data.name);
+
+            const nodeEnter = nodes.enter().append("g")
+                .attr("class", d => `node ${d.data.type}`)
+                .attr("transform", d => `translate(${d.y},${d.x})`)
+                .style("cursor", "pointer")
+                .on("click", clicked)
+                .on("mouseover", function(event, d) {
+                    showTooltip(event, d);
+                })
+                .on("mouseout", function(event, d) {
+                    hideTooltip();
+                })
+                .on("mousemove", function(event, d) {
+                    // Update tooltip position as mouse moves
+                    d3.selectAll(".tooltip")
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY + 10) + "px");
+                });
+
+            nodeEnter.append("circle")
+                .attr("r", d => {
+                    switch(d.data.type) {
+                        case 'root': return 12;
+                        case 'phase': return 10;
+                        case 'decision': return 8;
+                        default: return 6;
+                    }
+                });
+
+            nodeEnter.append("text")
+                .attr("dy", "0.35em")
+                .attr("x", d => d.children || d._children ? -15 : 15)
+                .style("text-anchor", d => d.children || d._children ? "end" : "start")
+                .text(d => {
+                    const maxLength = 25;
+                    return d.data.name.length > maxLength ? 
+                           d.data.name.substring(0, maxLength) + "..." : 
+                           d.data.name;
+                });
+
+            // Update existing nodes
+            nodes.transition()
+                .duration(750)
+                .attr("transform", d => `translate(${d.y},${d.x})`);
+
+            // Remove exiting nodes
+            nodes.exit().transition()
+                .duration(750)
+                .remove();
+        }
+
+        function updateLinks() {
+            const links = g.selectAll(".link")
+                .data(root.links(), d => d.target.data.name);
+
+            links.enter().insert("path", "g")
+                .attr("class", "link")
+                .attr("d", diagonal);
+
+            links.transition()
+                .duration(750)
+                .attr("d", diagonal);
+
+            links.exit().transition()
+                .duration(750)
+                .remove();
+        }
+
+        function clicked(event, d) {
+            // Show detail panel on click
+            showDetailPanel(d);
+
+            // Prevent event propagation to avoid closing the panel
+            event.stopPropagation();
+        }
+
+        function showDetailPanel(d) {
+            const panel = document.getElementById('detail-panel');
+            const content = document.getElementById('detail-content');
+
+            let html = `<h2 style="margin-top: 0; color: #2c3e50;">${d.data.name}</h2>`;
+
+            // Type badge
+            const typeColors = {
+                'root': '#2c3e50',
+                'phase': '#3498db',
+                'decision': '#e74c3c',
+                'alternative': d.data.chosen ? '#27ae60' : '#95a5a6'
+            };
+            html += `<div style="display: inline-block; background: ${typeColors[d.data.type] || '#95a5a6'}; color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; margin-bottom: 15px;">${d.data.type.toUpperCase()}</div>`;
+
+            if (d.data.description) {
+                html += `<p style="color: #7f8c8d; font-style: italic; border-left: 3px solid #3498db; padding-left: 12px; margin: 15px 0;">${d.data.description}</p>`;
+            }
+
+            if (d.data.problem) {
+                html += `<div style="background: #ffe5e5; border-left: 4px solid #e74c3c; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #c0392b;">🔴 Problem</h4>
+                    <p style="margin: 0;">${d.data.problem}</p>
+                </div>`;
+            }
+
+            if (d.data.solution) {
+                html += `<div style="background: #e8f5e9; border-left: 4px solid #27ae60; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #229954;">✅ Solution</h4>
+                    <p style="margin: 0;">${d.data.solution}</p>
+                </div>`;
+            }
+
+            if (d.data.rationale) {
+                html += `<div style="background: #fff3e0; border-left: 4px solid #f39c12; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #e67e22;">💡 Rationale</h4>
+                    <p style="margin: 0;">${d.data.rationale}</p>
+                </div>`;
+            }
+
+            if (d.data.performance_impact) {
+                html += `<div style="background: #f3e5f5; border-left: 4px solid #9b59b6; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #8e44ad;">⚡ Performance Impact</h4>
+                    <p style="margin: 0;">${d.data.performance_impact}</p>
+                </div>`;
+            }
+
+            if (d.data.files_affected && d.data.files_affected.length > 0) {
+                html += `<div style="background: #e3f2fd; border-left: 4px solid #2196f3; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #1976d2;">📁 Files Affected</h4>`;
+                d.data.files_affected.forEach(file => {
+                    html += `<div style="font-family: monospace; font-size: 13px; padding: 4px 0;">${file}</div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (d.data.chosen !== undefined) {
+                const chosenStyle = d.data.chosen ?
+                    'background: #27ae60; color: white;' :
+                    'background: #95a5a6; color: white;';
+                const chosenIcon = d.data.chosen ? "✅" : "❌";
+                const chosenText = d.data.chosen ? "Chosen Alternative" : "Not Chosen";
+                html += `<div style="${chosenStyle} padding: 10px; border-radius: 4px; margin: 15px 0; text-align: center; font-weight: bold;">
+                    ${chosenIcon} ${chosenText}
+                </div>`;
+            }
+
+            if (d.data.outcome) {
+                html += `<div style="background: #f5f5f5; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                    <h4 style="margin: 0 0 8px 0; color: #34495e;">🎯 Outcome</h4>
+                    <p style="margin: 0;">${d.data.outcome}</p>
+                </div>`;
+            }
+
+            if (d.data.session_date || d.data.conversation_ref) {
+                html += `<div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #ecf0f1; font-size: 13px; color: #7f8c8d;">`;
+                if (d.data.session_date) html += `<div style="margin: 5px 0;">📅 Date: <strong>${d.data.session_date}</strong></div>`;
+                if (d.data.conversation_ref) html += `<div style="margin: 5px 0;">🔗 Reference: <strong>${d.data.conversation_ref}</strong></div>`;
+                html += `</div>`;
+            }
+
+            // Show children count if any
+            const childCount = (d.children || d._children || []).length;
+            if (childCount > 0) {
+                html += `<div style="margin-top: 15px; padding: 10px; background: #ecf0f1; border-radius: 4px; text-align: center; font-size: 13px; color: #34495e;">
+                    📊 Contains ${childCount} sub-item${childCount > 1 ? 's' : ''}
+                </div>`;
+            }
+
+            content.innerHTML = html;
+            panel.style.display = 'block';
+
+            // Scroll to top of panel
+            panel.scrollTop = 0;
+        }
+
+        function closeDetailPanel() {
+            document.getElementById('detail-panel').style.display = 'none';
+        }
+
+        // Close panel when clicking outside
+        document.addEventListener('click', function(event) {
+            const panel = document.getElementById('detail-panel');
+            if (panel.style.display === 'block' && !panel.contains(event.target)) {
+                // Don't close if clicking on tree nodes
+                if (!event.target.closest('.node') && !event.target.closest('circle') && !event.target.closest('text')) {
+                    closeDetailPanel();
+                }
+            }
+        });
+
+        function showTooltip(event, d) {
+            // Remove any existing tooltips first
+            d3.selectAll(".tooltip").remove();
+            
+            const tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY + 10) + "px");
+
+            let content = `<h4>${d.data.name}</h4>`;
+            
+            if (d.data.description) {
+                content += `<div style="margin-bottom: 8px;">${d.data.description}</div>`;
+            }
+            
+            if (d.data.problem) {
+                content += `<div class="problem"><strong>🔴 Problem:</strong><br>${d.data.problem}</div>`;
+            }
+            
+            if (d.data.solution) {
+                content += `<div class="solution"><strong>✅ Solution:</strong><br>${d.data.solution}</div>`;
+            }
+            
+            if (d.data.rationale) {
+                content += `<div style="margin-bottom: 8px;"><strong>💡 Rationale:</strong><br>${d.data.rationale}</div>`;
+            }
+            
+            if (d.data.performance_impact) {
+                content += `<div style="margin-bottom: 8px; color: #f39c12;"><strong>⚡ Performance Impact:</strong><br>${d.data.performance_impact}</div>`;
+            }
+
+            if (d.data.files_affected && d.data.files_affected.length > 0) {
+                content += `<div style="margin-bottom: 8px;"><strong>📁 Files Affected:</strong><br>${d.data.files_affected.join(', ')}</div>`;
+            }
+
+            if (d.data.chosen !== undefined) {
+                const chosenIcon = d.data.chosen ? "✅" : "❌";
+                const chosenText = d.data.chosen ? "Chosen" : "Not Chosen";
+                content += `<div style="margin-bottom: 8px;"><strong>${chosenIcon} ${chosenText}</strong></div>`;
+            }
+
+            if (d.data.outcome) {
+                content += `<div style="margin-bottom: 8px;"><strong>🎯 Outcome:</strong><br>${d.data.outcome}</div>`;
+            }
+            
+            if (d.data.session_date || d.data.conversation_ref) {
+                content += `<div class="meta">`;
+                if (d.data.session_date) content += `📅 Date: ${d.data.session_date}<br>`;
+                if (d.data.conversation_ref) content += `🔗 Ref: ${d.data.conversation_ref}`;
+                content += `</div>`;
+            }
+
+            tooltip.html(content)
+                .transition()
+                .duration(200)
+                .style("opacity", 1);
+
+            // Adjust tooltip position if it goes off screen
+            const tooltipNode = tooltip.node();
+            const tooltipRect = tooltipNode.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            if (tooltipRect.right > windowWidth) {
+                tooltip.style("left", (event.pageX - tooltipRect.width - 10) + "px");
+            }
+            if (tooltipRect.bottom > windowHeight) {
+                tooltip.style("top", (event.pageY - tooltipRect.height - 10) + "px");
+            }
+        }
+
+        function hideTooltip() {
+            d3.selectAll(".tooltip").remove();
+        }
+
+        function expandAll() {
+            root.each(d => {
+                if (d._children) {
+                    d.children = d._children;
+                    d._children = null;
+                }
+            });
+            updateVisualization();
+        }
+
+        function collapseAll() {
+            root.each(d => {
+                if (d.children && d.depth > 0) {
+                    d._children = d.children;
+                    d.children = null;
+                }
+            });
+            updateVisualization();
+        }
+
+        function resetZoom() {
+            svg.transition().duration(750).call(
+                d3.zoom().transform,
+                d3.zoomIdentity
+            );
+        }
+
+        function exportSVG() {
+            const svgData = new XMLSerializer().serializeToString(document.getElementById("tree-svg"));
+            const svgBlob = new Blob([svgData], {type: "image/svg+xml;charset=utf-8"});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            const downloadLink = document.createElement("a");
+            downloadLink.href = svgUrl;
+            downloadLink.download = "metricstream_decision_tree.svg";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        function updateStats() {
+            const stats = calculateStats(treeData);
+            const container = document.getElementById('stats-container');
+            
+            container.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #3498db;">📊</div>
+                    <div>
+                        <div style="font-weight: 600;">Total Phases</div>
+                        <div style="color: #666;">${stats.phases}</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #e74c3c;">🎯</div>
+                    <div>
+                        <div style="font-weight: 600;">Decisions Made</div>
+                        <div style="color: #666;">${stats.decisions}</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #27ae60;">✅</div>
+                    <div>
+                        <div style="font-weight: 600;">Alternatives Evaluated</div>
+                        <div style="color: #666;">${stats.alternatives}</div>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #f39c12;">⚡</div>
+                    <div>
+                        <div style="font-weight: 600;">Performance Optimizations</div>
+                        <div style="color: #666;">${stats.performance_optimizations}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateStats(data) {
+            let phases = 0;
+            let decisions = 0;
+            let alternatives = 0;
+            let performance_optimizations = 0;
+
+            function traverse(node) {
+                if (node.type === 'phase') phases++;
+                if (node.type === 'decision') decisions++;
+                if (node.type === 'alternative') alternatives++;
+                if (node.performance_impact) performance_optimizations++;
+                
+                if (node.children) {
+                    node.children.forEach(traverse);
+                }
+            }
+
+            traverse(data);
+            return { phases, decisions, alternatives, performance_optimizations };
+        }
+
+        // Event listeners
+        document.getElementById('layout-select').addEventListener('change', (e) => {
+            currentLayout = e.target.value;
+            updateVisualization();
+        });
+
+        document.getElementById('depth-select').addEventListener('change', (e) => {
+            maxDepth = parseInt(e.target.value);
+            updateVisualization();
+        });
+
+        function getSampleData() {
+            // Complete decision tree data - loaded from database
+            return {"name":"MetricStream Performance Optimization","type":"root","description":"Journey from 200 RPS to high-performance metrics platform","children":[{"name":"Phase 1","type":"phase","description":"Optimization phase: Phase 1","children":[{"name":"Sequential request processing limiting throughput ...","type":"decision","problem":"Sequential request processing limiting throughput to ~200 RPS with poor multi-client performance","solution":"Thread-per-request model: spawn new thread for each incoming HTTP request","rationale":"Simple implementation providing immediate parallelism gains. Each request gets dedicated thread, avoiding head-of-line blocking. Acceptable for initial scale (<100 concurrent clients)","performance_impact":"20 clients: 81% → 88% success rate. Enables multiple clients to be processed simultaneously","session_date":"2024-09-28","conversation_ref":"Session 4","files_affected":["src/http_server.cpp","src/main.cpp"],"children":[{"name":"Alternative 1","type":"alternative","description":"1) Sequential processing - too slow; 2) Thread pool - more complex","chosen":true,"outcome":"Thread-per-request model: spawn new thread for each incoming HTTP request"},{"name":"Alternative 2","type":"alternative","description":"premature optimization; 3) Async I/O - requires complete rewrite","chosen":false,"outcome":"Not implemented"}]}]},{"name":"Phase 2","type":"phase","description":"Optimization phase: Phase 2","children":[{"name":"File I/O blocking request threads, causing timeout...","type":"decision","problem":"File I/O blocking request threads, causing timeouts under load. Each request thread waiting on disk writes","solution":"Producer-consumer pattern: request threads enqueue batches to concurrent queue, dedicated background thread performs batch writes","rationale":"Decouples critical path (request processing) from I/O operations. Background writer batches multiple metrics for efficient disk writes. Non-blocking enqueue keeps request threads responsive","performance_impact":"50 clients: 59% → 66% success rate. Reduced request latency by eliminating I/O wait time","session_date":"2024-09-29","conversation_ref":"Session 5","files_affected":["src/ingestion_service.cpp","include/ingestion_service.h"],"children":[{"name":"Alternative 1","type":"alternative","description":"1) Synchronous writing - causes request timeouts; 2) Per-request file handles - resource exhaustion; 3) Memory-only buffer - data loss risk","chosen":true,"outcome":"Producer-consumer pattern: request threads enqueue batches to concurrent queue, dedicated background thread performs batch writes"}]}]},{"name":"Phase 3","type":"phase","description":"Optimization phase: Phase 3","children":[{"name":"JSON parsing becoming bottleneck at high request r...","type":"decision","problem":"JSON parsing becoming bottleneck at high request rates. Regex overhead excessive for simple, known structure","solution":"Custom string-search parser optimized for metric JSON structure: {timestamp, name, value}. Linear scan with field extraction","rationale":"Known metric structure allows optimization. String search is O(n) vs regex O(n²). Eliminates library overhead. Maintains JSON compatibility for ecosystem integration","performance_impact":"100 clients: 80.2% success rate, 2.73ms avg latency. Significant parsing speedup eliminated CPU bottleneck","session_date":"2024-09-30","conversation_ref":"Session 6","files_affected":["src/ingestion_service.cpp"],"children":[{"name":"Alternative 1","type":"alternative","description":"1) Regex-based parsing - O(n²) complexity","chosen":true,"outcome":"Custom string-search parser optimized for metric JSON structure: {timestamp, name, value}. Linear scan with field extraction"},{"name":"Alternative 2","type":"alternative","description":"slow; 2) Full JSON library - overkill for simple structure; 3) Binary format - breaks HTTP/JSON compatibility","chosen":false,"outcome":"Not implemented"}]}]},{"name":"Phase 4","type":"phase","description":"Optimization phase: Phase 4","children":[{"name":"Double mutex serialization: rate_limiter_mutex_ fo...","type":"decision","problem":"Double mutex serialization: rate_limiter_mutex_ followed by metrics_mutex_ serializes all client requests","solution":"Hash-based pre-allocated mutex pool with per-client locking using std::array<std::mutex, MUTEX_POOL_SIZE>","rationale":"Eliminates constructor races while enabling true per-client concurrency","performance_impact":"Expected 50-80% improvement in multi-client scenarios","session_date":"2024-10-01","conversation_ref":"Session 1","files_affected":["include/ingestion_service.h","src/ingestion_service.cpp"],"children":[{"name":"Alternative 1","type":"alternative","description":"Remove mutexes entirely (data corruption risk)","chosen":true,"outcome":"Hash-based pre-allocated mutex pool with per-client locking using std::array<std::mutex, MUTEX_POOL_SIZE>"},{"name":"Alternative 2","type":"alternative","description":"std::map<string","chosen":false,"outcome":"Not implemented"},{"name":"Alternative 3","type":"alternative","description":"mutex> (constructor races)","chosen":false,"outcome":"Not implemented"}]}]},{"name":"Phase 5","type":"phase","description":"Optimization phase: Phase 5","children":[{"name":"Profiling revealed thread creation overhead (500μs...","type":"decision","problem":"Profiling revealed thread creation overhead (500μs) dwarfs actual request work (5μs). Thread-per-request model doesn't scale beyond ~2K RPS","solution":"1) Lock-free ring buffer for metrics collection (eliminate mutex contention); 2) Profiling identified need for thread pool architecture (next phase)","rationale":"Lock-free ring buffer eliminates remaining mutex contention in hot path. Profiling data proves thread creation (100x overhead) is the bottleneck. Thread pool will amortize creation cost across requests","performance_impact":"Lock-free collection: reduced contention. Profiling insight: thread pool expected to enable 10K+ RPS by eliminating per-request thread creation","session_date":"2025-10-03","conversation_ref":"Session 7","files_affected":["src/ingestion_service.cpp","include/ingestion_service.h"],"children":[{"name":"Alternative 1","type":"alternative","description":"1) Keep thread-per-request - hits wall at 2K RPS; 2) Event loop (Node.js style) - requires complete rewrite; 3) Thread pool - optimal","chosen":true,"outcome":"1) Lock-free ring buffer for metrics collection (eliminate mutex contention); 2) Profiling identified need for thread pool architecture (next phase)"},{"name":"Alternative 2","type":"alternative","description":"planned for Phase 6","chosen":false,"outcome":"Not implemented"}]}]}],"metadata":{"generated_at":"2025-10-03T16:51:38.981839","generator":"MetricStream Decision Tree Generator","version":"1.0"}};
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
