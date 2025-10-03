@@ -45,7 +45,7 @@ for config in "${TEST_CONFIGS[@]}"; do
     
     # Run load test
     echo "⏱️  Starting load test..."
-    ./load_test 8080 $clients $requests_per_client $interval > temp_results.txt
+    ./build/load_test 8080 $clients $requests_per_client $interval > temp_results.txt
     
     # Parse results
     success_rate=$(grep "Success Rate:" temp_results.txt | awk '{print $3}' | sed 's/%//')

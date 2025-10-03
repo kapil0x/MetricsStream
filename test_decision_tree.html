@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Decision Tree Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Decision Tree Functionality Test</h1>
+    <div id="test-results"></div>
+    
+    <script>
+        async function runTests() {
+            const results = document.getElementById('test-results');
+            
+            // Test 1: Check if decision tree JSON loads
+            try {
+                const response = await fetch('conversation/web/decision_tree.json');
+                const data = await response.json();
+                
+                if (data && data.name === "MetricStream Performance Optimization") {
+                    results.innerHTML += '<div class="test-result pass">✅ JSON data loads correctly</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ JSON data structure incorrect</div>';
+                }
+                
+                // Test 2: Check if phases exist
+                if (data.children && data.children.length >= 4) {
+                    results.innerHTML += '<div class="test-result pass">✅ All 4 phases present</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ Missing phases</div>';
+                }
+                
+                // Test 3: Check if Phase 4 has detailed data
+                const phase4 = data.children.find(child => child.name.includes("Phase 4"));
+                if (phase4 && phase4.children[0].problem && phase4.children[0].solution) {
+                    results.innerHTML += '<div class="test-result pass">✅ Phase 4 has detailed decision data</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ Phase 4 missing decision details</div>';
+                }
+                
+                // Test 4: Check if alternatives exist
+                const decision = phase4.children[0];
+                if (decision.children && decision.children.length >= 3) {
+                    results.innerHTML += '<div class="test-result pass">✅ Decision has multiple alternatives</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ Missing decision alternatives</div>';
+                }
+                
+                // Display sample data for inspection
+                results.innerHTML += '<h2>Sample Decision Data:</h2>';
+                results.innerHTML += `<pre style="background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto;">
+Problem: ${decision.problem}
+
+Solution: ${decision.solution}
+
+Rationale: ${decision.rationale}
+
+Performance Impact: ${decision.performance_impact}
+
+Alternatives:
+${decision.children.map(alt => `- ${alt.name}: ${alt.description} ${alt.chosen ? '(CHOSEN)' : ''}`).join('\n')}
+</pre>`;
+                
+            } catch (error) {
+                results.innerHTML += '<div class="test-result fail">❌ Failed to load JSON: ' + error.message + '</div>';
+            }
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

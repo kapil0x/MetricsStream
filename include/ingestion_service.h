@@ -74,7 +74,7 @@ private:
 
 class IngestionService {
 public:
-    IngestionService(int port, size_t rate_limit = 1000);
+    IngestionService(int port, size_t rate_limit = 10000);
     ~IngestionService();
     
     void start();

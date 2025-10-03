@@ -28,121 +28,124 @@ std::mutex& RateLimiter::get_client_mutex(const std::string& client_id) {
 }
 
 bool RateLimiter::allow_request(const std::string& client_id) {
+    auto function_start = std::chrono::high_resolution_clock::now();
     auto now = std::chrono::steady_clock::now();
-    
-    // PHASE 4 OPTIMIZATION: Single per-client mutex instead of two global mutexes
-    // This allows different clients to process in parallel while maintaining thread safety
-    std::mutex& client_lock = get_client_mutex(client_id);
-    std::lock_guard<std::mutex> lock(client_lock);
-    
-    // Rate limiting logic - now under per-client lock
-    auto& client_queue = client_requests_[client_id];
-    
-    // Remove old timestamps (older than 1 second)
-    while (!client_queue.empty()) {
-        auto oldest_timestamp = client_queue.front();
-        auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - oldest_timestamp);
 
-        if (time_diff.count() >= 1) {
-            client_queue.pop_front();
-        } else {
-            break;
-        }
-    }
-    
+    // PHASE 5 OPTIMIZATION: Lock-free ring buffer for metrics collection
+    // Mutex only protects rate limiting state, not metrics (which use atomics)
     bool decision;
-    if(client_queue.size() < max_requests_){
-        client_queue.push_back(now);
-        decision = true;
-    } else {
-        decision = false;
-    }
-    
-    // Metrics collection - now under same per-client lock (no second mutex!)
+
+    auto lock_start = std::chrono::high_resolution_clock::now();
+    {
+        std::mutex& client_lock = get_client_mutex(client_id);
+        std::lock_guard<std::mutex> lock(client_lock);
+        auto lock_acquired = std::chrono::high_resolution_clock::now();
+
+        // Rate limiting logic - under per-client lock
+        auto& client_queue = client_requests_[client_id];
+
+        // Remove old timestamps (older than 1 second)
+        auto cleanup_start = std::chrono::high_resolution_clock::now();
+        size_t removed_count = 0;
+        while (!client_queue.empty()) {
+            auto oldest_timestamp = client_queue.front();
+            auto time_diff = std::chrono::duration_cast<std::chrono::seconds>(now - oldest_timestamp);
+
+            if (time_diff.count() >= 1) {
+                client_queue.pop_front();
+                removed_count++;
+            } else {
+                break;
+            }
+        }
+        auto cleanup_end = std::chrono::high_resolution_clock::now();
+
+        auto decision_start = std::chrono::high_resolution_clock::now();
+        if(client_queue.size() < max_requests_){
+            client_queue.push_back(now);
+            decision = true;
+        } else {
+            decision = false;
+        }
+        auto decision_end = std::chrono::high_resolution_clock::now();
+
+        // Profile logging (every 1000 requests)
+        static std::atomic<int> profile_counter{0};
+        if (profile_counter.fetch_add(1) % 1000 == 0) {
+            auto wait_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                lock_acquired - lock_start).count();
+            auto cleanup_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                cleanup_end - cleanup_start).count();
+            auto decision_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                decision_end - decision_start).count();
+            auto total_lock_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                decision_end - lock_acquired).count();
+
+            std::cerr << "[PROFILE] Wait: " << wait_time << "μs | "
+                      << "Cleanup: " << cleanup_time << "μs (" << removed_count << " items) | "
+                      << "Decision: " << decision_time << "μs | "
+                      << "Total-in-lock: " << total_lock_time << "μs | "
+                      << "Queue-size: " << client_queue.size() << "\n";
+        }
+    } // Lock released here
+
+    // LOCK-FREE metrics collection using atomic ring buffer
+    // Single-writer (this thread) / single-reader (flush thread) pattern
     auto& metrics = client_metrics_[client_id];
-    size_t write_idx = metrics.write_index.load();
-    
+    size_t write_idx = metrics.write_index.load(std::memory_order_relaxed);
+
+    // Write event to ring buffer
     metrics.ring_buffer[write_idx % ClientMetrics::BUFFER_SIZE] = MetricEvent{now, decision};
-    metrics.write_index.store(write_idx + 1);
-    
+
+    // Publish write with release semantics - ensures buffer write visible before index update
+    metrics.write_index.store(write_idx + 1, std::memory_order_release);
+
     return decision;
 }
 
 void RateLimiter::flush_metrics() {
-    // Phase 5: Deadlock prevention for multi-client metrics flushing
-    // Strategy: Consistent lock ordering + try-lock with exponential backoff
-    
-    // Step 1: Create sorted list of clients to ensure consistent lock ordering
+    // PHASE 5 OPTIMIZATION: Lock-free metrics reading
+    // No longer need complex lock ordering since metrics use atomic ring buffer
+    // Only client_metrics_ map iteration needs protection (for concurrent insertions)
+
+    // Get snapshot of current clients
     std::vector<std::string> client_ids;
     {
-        // Brief lock to get snapshot of current clients
-        // Note: This assumes client_metrics_ itself needs protection during iteration
-        // In production, consider using concurrent hash maps or RCU patterns
         static std::mutex client_list_mutex;
         std::lock_guard<std::mutex> list_lock(client_list_mutex);
-        
+
         client_ids.reserve(client_metrics_.size());
         for (const auto& [client_id, _] : client_metrics_) {
             client_ids.push_back(client_id);
         }
     }
-    
-    // Step 2: Sort by client_id to ensure consistent lock ordering across threads
-    // This prevents circular wait conditions that cause deadlocks
-    std::sort(client_ids.begin(), client_ids.end());
-    
-    // Step 3: Process each client with try-lock and exponential backoff
-    const int MAX_RETRIES = 3;
-    const auto BASE_DELAY = std::chrono::microseconds(10);
-    
+
+    // Process each client's metrics using lock-free reads
     for (const auto& client_id : client_ids) {
-        bool processed = false;
-        
-        for (int retry = 0; retry < MAX_RETRIES && !processed; ++retry) {
-            // Try to acquire client mutex without blocking
-            std::mutex& client_mutex = get_client_mutex(client_id);
-            std::unique_lock<std::mutex> lock(client_mutex, std::try_to_lock);
-            
-            if (lock.owns_lock()) {
-                // Successfully acquired lock - process this client's metrics
-                auto it = client_metrics_.find(client_id);
-                if (it != client_metrics_.end()) {
-                    auto& metrics = it->second;
-                    
-                    // Read current ring buffer state atomically
-                    size_t read_idx = metrics.read_index.load(std::memory_order_acquire);
-                    size_t write_idx = metrics.write_index.load(std::memory_order_acquire);
-                    
-                    // Process all events between read and write indices
-                    size_t events_processed = 0;
-                    for (size_t i = read_idx; i < write_idx; ++i) {
-                        const auto& event = metrics.ring_buffer[i % ClientMetrics::BUFFER_SIZE];
-                        
-                        // Send to monitoring (may involve I/O - do outside critical section would be better)
-                        send_to_monitoring(client_id, event.timestamp, event.allowed);
-                        events_processed++;
-                    }
-                    
-                    // Update read index to mark events as processed
-                    if (events_processed > 0) {
-                        metrics.read_index.store(write_idx, std::memory_order_release);
-                    }
-                }
-                processed = true;
-                
-            } else {
-                // Failed to acquire lock - exponential backoff before retry
-                if (retry < MAX_RETRIES - 1) {
-                    auto delay = BASE_DELAY * (1 << retry); // Exponential backoff: 10μs, 20μs, 40μs
-                    std::this_thread::sleep_for(delay);
-                }
-            }
+        auto it = client_metrics_.find(client_id);
+        if (it == client_metrics_.end()) {
+            continue;
         }
-        
-        // If we couldn't process this client after retries, skip it this round
-        // This prevents one slow client from blocking the entire flush operation
-        if (!processed) {
-            // Could log this for monitoring: "Skipped client {} due to lock contention"
+
+        auto& metrics = it->second;
+
+        // LOCK-FREE READ: Use acquire semantics to see all writes before write_index update
+        size_t read_idx = metrics.read_index.load(std::memory_order_acquire);
+        size_t write_idx = metrics.write_index.load(std::memory_order_acquire);
+
+        // Process all events between read and write indices
+        size_t events_processed = 0;
+        for (size_t i = read_idx; i < write_idx; ++i) {
+            const auto& event = metrics.ring_buffer[i % ClientMetrics::BUFFER_SIZE];
+
+            // Send to monitoring (I/O operation outside any critical section)
+            send_to_monitoring(client_id, event.timestamp, event.allowed);
+            events_processed++;
+        }
+
+        // Update read index with release semantics to mark events as processed
+        if (events_processed > 0) {
+            metrics.read_index.store(write_idx, std::memory_order_release);
         }
     }
 }
