@@ -8,8 +8,11 @@
 
 namespace metricstream {
 
-HttpServer::HttpServer(int port) 
-    : port_(port), running_(false) {}
+HttpServer::HttpServer(int port, size_t thread_pool_size)
+    : port_(port), running_(false) {
+    // Phase 6: Initialize thread pool
+    thread_pool_ = std::make_unique<ThreadPool>(thread_pool_size);
+}
 
 HttpServer::~HttpServer() {
     stop();
@@ -81,23 +84,35 @@ void HttpServer::run_server() {
             continue;
         }
 
-        // Process request in separate thread for concurrency
-        std::thread([this, client_socket]() {
+        // PHASE 6: Enqueue request to thread pool (eliminates thread creation overhead)
+        bool enqueued = thread_pool_->enqueue([this, client_socket]() {
             // Read request
             char buffer[4096] = {0};
             ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
-            
+
             if (bytes_read > 0) {
                 std::string request_data(buffer, bytes_read);
                 HttpRequest request = parse_request(request_data);
                 HttpResponse response = handle_request(request);
-                
+
                 std::string response_str = format_response(response);
                 write(client_socket, response_str.c_str(), response_str.length());
             }
 
             close(client_socket);
-        }).detach(); // Detach thread to handle request independently
+        });
+
+        // If queue is full (backpressure), reject request immediately
+        if (!enqueued) {
+            const char* overload_response =
+                "HTTP/1.1 503 Service Unavailable\r\n"
+                "Content-Type: application/json\r\n"
+                "Content-Length: 47\r\n"
+                "\r\n"
+                "{\"error\":\"Server overloaded, try again later\"}";
+            write(client_socket, overload_response, strlen(overload_response));
+            close(client_socket);
+        }
     }
 
     close(server_fd);
