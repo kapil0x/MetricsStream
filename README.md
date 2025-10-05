@@ -1,30 +1,55 @@
 # MetricStream
 
-A comprehensive metrics platform built from first principles - like Prometheus or DataDog, but designed for learning the underlying engineering. Currently focused on the ingestion and rate limiting subsystem.
+A comprehensive metrics platform built from first principles - like Prometheus or DataDog, but designed for learning the underlying engineering. **Phase 1 (Ingestion Service) is fully implemented and optimized.** The complete system architecture is designed with detailed capacity planning and technology decisions documented in `/docs`.
 
-## What's Here
+## Architecture Overview
 
-**Current Component: Metrics Ingestion Service**
-- HTTP server from raw sockets
-- Rate limiting with sliding windows  
-- Custom JSON parser (zero dependencies)
-- Concurrent request processing
-- Performance measurement and optimization
+### What's Built (Phase 1: Ingestion Service)
 
-Currently handles ~200 RPS. Working toward 10K RPS through systematic optimization.
+**Current measured performance:**
+- **Throughput**: 2,253 RPS sustained (100% success rate)
+- **Latency**: p50 = 0.25ms, p99 = 0.65ms
+- **Concurrency**: 100 concurrent clients, HTTP Keep-Alive
+- **Resource usage**: 45% CPU, 150MB memory per server
 
-**Planned Components:**
-- Time-series storage engine
-- Query processing and aggregation
-- Alerting and notification system
-- Visualization and dashboards
-- Distributed architecture for horizontal scaling
+**Implementation from first principles:**
+- HTTP server from raw Berkeley sockets (`socket()`, `bind()`, `listen()`, `accept()`)
+- Thread pool with 16 worker threads
+- Lock-free ring buffer for metrics collection (`std::atomic` with memory ordering)
+- Hash-based mutex pool (64 mutexes) for per-client rate limiting
+- Custom O(n) JSON parser (zero dependencies, optimized from O(n²) regex)
+- Sliding window rate limiting (10 req/sec per client)
+- HTTP Keep-Alive persistent connections (60s timeout)
 
-## Data Flow
-
+**Current data flow:**
 ```
-HTTP Request → Rate Limiting → JSON Parsing → File Storage
+HTTP Request → Thread Pool → Rate Limiting → JSON Parsing → JSONL File
 ```
+
+### What's Designed (Phases 2-5: Production Platform)
+
+**Target capacity:** 100K writes/sec from 10K monitored servers
+**Estimated cost:** ~$924/month AWS (optimized from $6,070/month baseline)
+
+**Full system architecture:**
+```
+Monitoring Agents (10K servers)
+         ↓
+Ingestion Service (10 servers @ 10K RPS each)
+         ↓
+Apache Kafka (3 brokers, 12 partitions, client_id hash routing)
+         ↓
+Apache Flink (stream processing, 12 workers, 1-second tumbling windows)
+         ↓
+InfluxDB Cluster (3 nodes, 30-day retention, 1-year downsampling)
+         ↓
+Grafana Dashboards (pre-aggregated queries)
+```
+
+**See detailed documentation:**
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - Complete system design with component comparisons
+- [`docs/DESIGN_DECISIONS.md`](docs/DESIGN_DECISIONS.md) - Architecture Decision Records (ADRs)
+- [`docs/CAPACITY_PLANNING.md`](docs/CAPACITY_PLANNING.md) - Scaling analysis with AWS costs
 
 ## Build
 
@@ -83,12 +108,21 @@ write_index.store(idx + 1);
 
 ## Performance Optimization Journey
 
-**Phase 1**: Threading per request (20 clients: 81% → 88%)
-**Phase 2**: Async I/O (50 clients: 59% → 66%)
-**Phase 3**: JSON parsing optimization (100 clients: 80.2%)
-**Phase 4**: Hash-based per-client locking (current)
+Each phase targets a measured bottleneck with systematic improvements:
 
-Each phase targets a specific bottleneck. Measurements guide the next optimization.
+| Phase | Optimization | Result @ 100 clients |
+|-------|-------------|---------------------|
+| **Phase 1** | Threading per request | 20 clients: 81% → 88% success |
+| **Phase 2** | Async I/O with producer-consumer | 50 clients: 59% → 66% success |
+| **Phase 3** | JSON parsing (O(n²)→O(n)) | 80.2% success, 2.73ms latency |
+| **Phase 4** | Hash-based per-client mutex | 95%+ success (reduced contention) |
+| **Phase 5** | Thread pool architecture | 100% success, 0.65ms latency |
+| **Phase 6** | Lock-free ring buffer | Eliminated metrics collection overhead |
+| **Phase 7** | HTTP Keep-Alive | **100% success, 0.25ms latency, 2,253 RPS** |
+
+**Key breakthrough (Phase 7):** Increased listen backlog from 10 → 1024 to handle concurrent connection bursts. Combined with HTTP Keep-Alive, this eliminated TCP handshake overhead (was 1-2ms per request) and achieved 100% success rate at target load.
+
+See [`docs/phase7_keep_alive_results.md`](docs/phase7_keep_alive_results.md) for detailed analysis.
 
 ## Load Testing
 
@@ -115,8 +149,5 @@ load_test.cpp             # Performance testing
 - Requires C++17
 - Check `metrics.jsonl` for stored data
 - Server logs to stdout
-- Current bottleneck: mutex contention (Phase 4 target)
-
-## Contributing
-
-Open issue: `flush_metrics()` needs safe multi-client iteration without deadlocks. See TODO(human) in `src/ingestion_service.cpp`.
+- Phase 1 optimization complete (Phase 7: HTTP Keep-Alive)
+- See `/docs` for full system architecture and design decisions

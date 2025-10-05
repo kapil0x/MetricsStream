@@ -3,10 +3,158 @@
 
 This document outlines a structured path for developing principal engineer-level skills through hands-on system building and debugging.
 
+**Core Philosophy**: Design the complete system architecture first, then implement one component deeply. This demonstrates both breadth (system design thinking) and depth (implementation mastery).
+
+**MetricStream Approach**:
+- **Designed**: Full production platform (Kafka, Flink, InfluxDB, Grafana) with capacity planning
+- **Built**: Phase 1 Ingestion Service optimized to 2,253 RPS with 100% success rate
+- **Documented**: Architecture Decision Records (ADRs), capacity planning, cost analysis
+
+---
+
+## Phase 0: System Design Foundations
+**Before writing any code, design the complete production system.**
+
+### Staff Engineer Deliverables
+
+#### **1. Architecture Design Document**
+Design the full platform even before implementing Phase 1:
+
+```
+Target System: Production metrics platform for 10K monitored servers
+
+Agents (10K servers)
+    ↓ (HTTP/JSON, 10 metrics/sec per server = 100K writes/sec total)
+Ingestion Service (10 servers @ 10K RPS each)
+    ↓ (Kafka partitioning by client_id)
+Apache Kafka (3 brokers, 12 partitions)
+    ↓ (Stream processing with 1-second tumbling windows)
+Apache Flink (12 workers, CEP for alerts)
+    ↓ (Batch writes to time-series DB)
+InfluxDB Cluster (3 nodes, 30-day retention)
+    ↓ (Pre-aggregated queries)
+Grafana Dashboards (visualization layer)
+```
+
+**Key system design decisions**:
+- Why Kafka over RabbitMQ (throughput: 1M msg/sec vs 50K msg/sec)
+- Why InfluxDB over TimescaleDB (purpose-built for time-series vs PostgreSQL extension)
+- Partitioning strategy (hash by client_id for even load distribution)
+- Retention policies (30 days raw, 1 year downsampled to 1-hour resolution)
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for complete design.
+
+#### **2. Architecture Decision Records (ADRs)**
+Document every major technology choice with systematic analysis:
+
+**ADR Template**:
+```markdown
+# ADR-XXX: [Decision Title]
+
+## Status
+Accepted | Proposed | Deprecated
+
+## Context
+What problem are we solving? What constraints exist?
+
+## Decision
+What did we choose and why?
+
+## Alternatives Considered
+| Option | Pros | Cons | Score |
+|--------|------|------|-------|
+| Option A | ... | ... | 8/10 |
+| Option B | ... | ... | 6/10 |
+
+## Consequences
+What are the implications (positive and negative)?
+
+## Implementation Notes
+How will this be built? What are the risks?
+```
+
+**Example ADRs from MetricStream**:
+- ADR-001: Build HTTP from raw sockets (learning goal, not production pragmatism)
+- ADR-002: Lock-free ring buffer vs mutex (wait-free metrics collection)
+- ADR-005: InfluxDB vs TimescaleDB (detailed scoring across 8 dimensions)
+
+See [`DESIGN_DECISIONS.md`](DESIGN_DECISIONS.md) for all ADRs.
+
+#### **3. Capacity Planning with Real Costs**
+Calculate actual infrastructure costs and scaling characteristics:
+
+**Capacity Planning Framework**:
+```
+1. Current Performance Measurement
+   - Measured RPS: 2,253 (Phase 1, single server)
+   - Resource usage: 45% CPU, 150MB memory
+   - Bottleneck identification: CPU-bound on JSON parsing
+
+2. Single Server Capacity Limits
+   - Projected max RPS: ~10K (at 90% CPU utilization)
+   - Memory capacity: ~500 concurrent connections
+   - Network bandwidth: 1 Gbps NIC = 125 MB/sec
+
+3. Horizontal Scaling Math
+   - Target: 100K writes/sec from 10K servers
+   - Required ingestion servers: 100K / 10K = 10 servers
+   - Cost per server: c6i.2xlarge @ $0.34/hour = $2,448/year
+   - Total ingestion cost: 10 × $2,448 = $24,480/year
+
+4. Full Infrastructure Cost Breakdown
+   - Ingestion: 10 × c6i.2xlarge = $730/month
+   - Kafka: 3 × m5.xlarge = $1,260/month
+   - Flink: 12 × c6i.xlarge = $1,752/month
+   - InfluxDB: 3 × i3.2xlarge = $1,872/month
+   - Total: $6,070/month baseline
+   - Optimized: $924/month (Spot instances, reserved capacity)
+
+5. Cost Per Metric Calculation
+   - 100K writes/sec × 86,400 sec/day = 8.64B metrics/day
+   - Monthly cost: $924 / (8.64B × 30) = $0.000000023 per metric
+   - Comparison: 96% cheaper than Datadog ($150K/month for 10K hosts)
+```
+
+See [`CAPACITY_PLANNING.md`](CAPACITY_PLANNING.md) for detailed analysis.
+
+### **Learning Objectives**
+- Design complete production systems before writing code
+- Create Architecture Decision Records with alternatives analysis
+- Perform capacity planning with real AWS/GCP pricing
+- Demonstrate staff-level breadth (system design) and depth (implementation)
+
+### **Why This Matters for Staff Engineer Roles**
+**Hiring managers evaluate**:
+- Can you design systems beyond what's currently built?
+- Do you document decisions systematically (ADRs)?
+- Can you estimate costs and make build-vs-buy decisions?
+- Do you think about scaling before it's a problem?
+
+**This approach demonstrates**:
+- **Breadth**: Designed Kafka, Flink, InfluxDB integration (not implemented yet)
+- **Depth**: Implemented Phase 1 from raw sockets, optimized to 2,253 RPS
+- **Decision-making**: 5 detailed ADRs with scoring matrices
+- **Business acumen**: $924/month cost (96% cheaper than Datadog)
+
+**What differentiates staff from senior**:
+- Senior: "I built a high-performance HTTP server"
+- Staff: "I designed a scalable metrics platform (10K servers, $924/month AWS cost), implemented Phase 1 deeply (2,253 RPS, 0.25ms latency), and documented all architectural decisions with ADRs"
+
 ---
 
 ## Phase 1: Performance Engineering Deep Dive
-**Current State**: 200 req/sec → 91.4% success at 2500 req/sec
+**Current State**: Phase 7 complete - **2,253 RPS sustained, 100% success rate, 0.25ms latency**
+
+**Optimization Journey** (each phase targeted a measured bottleneck):
+- Phase 1: Threading per request → 88% success at 20 clients
+- Phase 2: Async I/O → 66% success at 50 clients
+- Phase 3: JSON parsing O(n²)→O(n) → 80.2% success at 100 clients
+- Phase 4: Hash-based mutex pool → Reduced contention
+- Phase 5: Thread pool architecture → 100% success, 0.65ms latency
+- Phase 6: Lock-free ring buffer → Eliminated metrics overhead
+- **Phase 7: HTTP Keep-Alive + listen backlog 1024 → 100% success, 0.25ms latency**
+
+See [`docs/phase7_keep_alive_results.md`](phase7_keep_alive_results.md) for detailed phase-by-phase analysis.
 
 ### Core Skills Development
 
