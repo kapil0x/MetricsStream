@@ -128,7 +128,6 @@
             border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
-            cursor: pointer;
         }
 
         .phase-card:hover {
@@ -247,6 +246,18 @@
             margin-top: 15px;
         }
 
+        .exercise-content {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #e9ecef;
+        }
+
+        .exercise-content.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
         .btn {
             padding: 8px 16px;
             border: none;
@@ -316,9 +327,6 @@
             border-left: 4px solid #95a5a6;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .chapter-item:hover {
@@ -331,10 +339,59 @@
             background: #e8f5e9;
         }
 
+        .chapter-item.expanded {
+            border-left-color: #667eea;
+            background: #e3f2fd;
+        }
+
+        .chapter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .chapter-checkbox {
             width: 24px;
             height: 24px;
             cursor: pointer;
+        }
+
+        .chapter-content {
+            display: none;
+            background: white;
+            padding: 25px;
+            margin: 15px 0 0 0;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            animation: slideDown 0.3s ease;
+        }
+
+        .chapter-content.active {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                max-height: 2000px;
+                transform: translateY(0);
+            }
+        }
+
+        .expand-icon {
+            margin-left: 10px;
+            font-size: 14px;
+            color: #7f8c8d;
+            transition: transform 0.3s ease;
+        }
+
+        .chapter-item.expanded .expand-icon {
+            transform: rotate(90deg);
         }
 
         .path-selector {
@@ -395,6 +452,7 @@
             border-radius: 10px;
             text-align: center;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
 
         .resource-card:hover {
@@ -498,6 +556,27 @@
                 padding: 20px;
             }
         }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+            line-height: 1.8;
+        }
+
+        ol {
+            margin-left: 20px;
+            margin-top: 10px;
+            line-height: 1.8;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -534,34 +613,35 @@
             <h3>What You'll Build</h3>
             <div class="info-box">
                 <p><strong>MetricsStream</strong> is a comprehensive metrics platform similar to Prometheus or DataDog, built from first principles:</p>
-                <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
-                    <li>HTTP server from raw sockets</li>
-                    <li>Custom JSON parser (zero dependencies)</li>
-                    <li>Sliding window rate limiting</li>
-                    <li>Lock-free ring buffer for high throughput</li>
-                    <li>Thread pool for efficient concurrency</li>
+                <ul>
+                    <li>HTTP server from raw sockets (socket, bind, listen, accept)</li>
+                    <li>Custom JSON parser optimized from O(n²) to O(n)</li>
+                    <li>Sliding window rate limiting with per-client tracking</li>
+                    <li>Lock-free ring buffer using atomic operations</li>
+                    <li>Thread pool for efficient concurrency management</li>
+                    <li>HTTP Keep-Alive for persistent connections</li>
                     <li>Async I/O with producer-consumer pattern</li>
                 </ul>
             </div>
 
-            <h3>Performance Journey</h3>
+            <h3>Real Performance Journey</h3>
             <div class="phase-stats">
                 <div class="stat-item">
                     <span class="stat-icon">🐌</span>
                     <div>
-                        <strong>Baseline:</strong> 200 RPS, 50% success rate
+                        <strong>Phase 0:</strong> Baseline (sequential processing)
                     </div>
                 </div>
                 <div class="stat-item">
                     <span class="stat-icon">🚀</span>
                     <div>
-                        <strong>After Phase 3:</strong> 2,500 RPS, 80% success rate
+                        <strong>Phase 3:</strong> 80.2% success at 100 clients
                     </div>
                 </div>
                 <div class="stat-item">
                     <span class="stat-icon">⚡</span>
                     <div>
-                        <strong>After Phase 7:</strong> 10,000+ RPS, 100% success rate
+                        <strong>Phase 7:</strong> 100% success, 0.25ms latency
                     </div>
                 </div>
             </div>
@@ -587,7 +667,7 @@
 
             <div class="warning-box">
                 <h4>📋 Prerequisites</h4>
-                <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
+                <ul>
                     <li>C++ fundamentals (classes, pointers, references)</li>
                     <li>Basic understanding of HTTP and JSON</li>
                     <li>Linux/Unix command line experience</li>
@@ -618,146 +698,12 @@ cmake .. && make
         <div class="content-panel" id="learning-path">
             <h2>🗺️ Structured Learning Path</h2>
             <p style="font-size: 1.1em; line-height: 1.8; color: #7f8c8d; margin-bottom: 30px;">
-                Follow this chapter-by-chapter guide to build MetricsStream systematically. Each chapter includes theory, implementation, and exercises.
+                Follow this chapter-by-chapter guide to build MetricsStream systematically. Click each chapter to see detailed content, code examples, and exercises.
             </p>
 
-            <h3>Core Curriculum (15 Chapters)</h3>
-            <ul class="chapter-list">
-                <li class="chapter-item" onclick="toggleChapter(1)">
-                    <div>
-                        <strong>Chapter 1:</strong> HTTP Server from Scratch
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Build HTTP server using raw sockets (socket, bind, listen, accept)
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(2)">
-                    <div>
-                        <strong>Chapter 2:</strong> HTTP Request Parsing
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Parse HTTP headers, routing, validation
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(3)">
-                    <div>
-                        <strong>Chapter 3:</strong> JSON Parsing Optimization
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Custom parser: O(n²) → O(n), single-pass algorithm
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(4)">
-                    <div>
-                        <strong>Chapter 4:</strong> Rate Limiting (Sliding Window)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Implement sliding window rate limiter for per-client limits
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(5)">
-                    <div>
-                        <strong>Chapter 5:</strong> File I/O and Persistence
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Write metrics to JSONL format, handle file operations
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(6)">
-                    <div>
-                        <strong>Chapter 6:</strong> Thread-Per-Request (Phase 1)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Spawn threads for concurrent request handling
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(7)">
-                    <div>
-                        <strong>Chapter 7:</strong> Async I/O (Phase 2)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Producer-consumer pattern, background writer thread
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(8)">
-                    <div>
-                        <strong>Chapter 8:</strong> Hash-Based Mutex Pool (Phase 4)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Per-client locking to eliminate serialization
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(9)">
-                    <div>
-                        <strong>Chapter 9:</strong> Lock-Free Ring Buffer (Phase 5)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Atomics, memory ordering, wait-free data structures
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(10)">
-                    <div>
-                        <strong>Chapter 10:</strong> Thread Pool (Phase 6)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Replace thread-per-request with fixed worker pool
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(11)">
-                    <div>
-                        <strong>Chapter 11:</strong> HTTP Keep-Alive (Phase 7)
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Persistent connections, listen backlog tuning
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(12)">
-                    <div>
-                        <strong>Chapter 12:</strong> Performance Profiling
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            perf, valgrind, strace, flamegraphs
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(13)">
-                    <div>
-                        <strong>Chapter 13:</strong> Load Testing
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Systematic testing, bottleneck identification
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(14)">
-                    <div>
-                        <strong>Chapter 14:</strong> Production Engineering
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Monitoring, alerting, observability
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
-                <li class="chapter-item" onclick="toggleChapter(15)">
-                    <div>
-                        <strong>Chapter 15:</strong> Distributed Systems
-                        <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
-                            Sharding, replication, distributed tracing
-                        </div>
-                    </div>
-                    <input type="checkbox" class="chapter-checkbox" onchange="updateProgress()">
-                </li>
+            <h3>Core Curriculum (20 Chapters)</h3>
+            <ul class="chapter-list" id="chapter-list">
+                <!-- Chapters will be dynamically generated -->
             </ul>
 
             <div class="info-box" style="margin-top: 30px;">
@@ -773,13 +719,13 @@ cmake .. && make
         <div class="content-panel" id="phases">
             <h2>⚡ Optimization Phases</h2>
             <p style="font-size: 1.1em; line-height: 1.8; color: #7f8c8d; margin-bottom: 30px;">
-                Each phase targets a measured bottleneck with concrete performance improvements. Learn the systematic approach to performance optimization.
+                Each phase targets a measured bottleneck with concrete performance improvements. These are the REAL numbers from actual testing.
             </p>
 
-            <div class="phase-card" onclick="expandPhase(0)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 0: Baseline</div>
-                    <div class="phase-badge">200 RPS</div>
+                    <div class="phase-badge">Sequential</div>
                 </div>
                 <div class="phase-description">
                     Sequential request processing. Single-threaded, blocking I/O. Establish performance baseline.
@@ -787,19 +733,19 @@ cmake .. && make
                 <div class="phase-stats">
                     <div class="stat-item">
                         <span class="stat-icon">📊</span>
-                        <div>200 RPS, 50% success rate</div>
+                        <div>Sequential processing only</div>
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">🎯</span>
-                        <div>Bottleneck: Sequential processing</div>
+                        <div>Bottleneck: Sequential execution</div>
                     </div>
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(1)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 1: Thread-Per-Request</div>
-                    <div class="phase-badge">500 RPS</div>
+                    <div class="phase-badge">81% → 88%</div>
                 </div>
                 <div class="phase-description">
                     Spawn new thread for each request. Enables parallelism, eliminates head-of-line blocking.
@@ -807,7 +753,7 @@ cmake .. && make
                 <div class="phase-stats">
                     <div class="stat-item">
                         <span class="stat-icon">📈</span>
-                        <div>81% → 88% success (20 clients)</div>
+                        <div>20 clients: 81% → 88% success</div>
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">⚙️</span>
@@ -816,10 +762,10 @@ cmake .. && make
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(2)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 2: Async I/O</div>
-                    <div class="phase-badge">800 RPS</div>
+                    <div class="phase-badge">59% → 66%</div>
                 </div>
                 <div class="phase-description">
                     Producer-consumer pattern. Dedicated background writer thread. Non-blocking request processing.
@@ -827,7 +773,7 @@ cmake .. && make
                 <div class="phase-stats">
                     <div class="stat-item">
                         <span class="stat-icon">📈</span>
-                        <div>59% → 66% success (50 clients)</div>
+                        <div>50 clients: 59% → 66% success</div>
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">⚙️</span>
@@ -836,10 +782,10 @@ cmake .. && make
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(3)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 3: JSON Parser Optimization</div>
-                    <div class="phase-badge">2,500 RPS</div>
+                    <div class="phase-badge">80.2% @ 100 clients</div>
                 </div>
                 <div class="phase-description">
                     Custom string-search parser. O(n²) → O(n) complexity. Single-pass algorithm for known structure.
@@ -847,7 +793,7 @@ cmake .. && make
                 <div class="phase-stats">
                     <div class="stat-item">
                         <span class="stat-icon">📈</span>
-                        <div>80.2% success, 2.73ms latency (100 clients)</div>
+                        <div>80.2% success, 2.73ms latency</div>
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">🎯</span>
@@ -856,30 +802,30 @@ cmake .. && make
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(4)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 4: Hash-Based Mutex Pool</div>
-                    <div class="phase-badge">4,000 RPS</div>
+                    <div class="phase-badge">Per-Client Locking</div>
                 </div>
                 <div class="phase-description">
                     Pre-allocated mutex array. Per-client locking eliminates double mutex serialization.
                 </div>
                 <div class="phase-stats">
                     <div class="stat-item">
-                        <span class="stat-icon">📈</span>
-                        <div>Expected 50-80% improvement</div>
-                    </div>
-                    <div class="stat-item">
                         <span class="stat-icon">🔒</span>
                         <div>Eliminates global lock contention</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">⚡</span>
+                        <div>True per-client concurrency</div>
                     </div>
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(5)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 5: Lock-Free Ring Buffer</div>
-                    <div class="phase-badge">8,000 RPS</div>
+                    <div class="phase-badge">Atomics</div>
                 </div>
                 <div class="phase-description">
                     Atomics and memory ordering. Wait-free metrics collection. Eliminates all mutex contention.
@@ -896,30 +842,30 @@ cmake .. && make
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(6)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 6: Thread Pool</div>
-                    <div class="phase-badge">10,000+ RPS</div>
+                    <div class="phase-badge">46-51%</div>
                 </div>
                 <div class="phase-description">
-                    Fixed worker threads. Amortizes thread creation cost (500μs) across thousands of requests.
+                    Fixed worker threads. Amortizes thread creation cost (500μs) across thousands of requests. Revealed listen backlog bottleneck.
                 </div>
                 <div class="phase-stats">
                     <div class="stat-item">
                         <span class="stat-icon">📈</span>
-                        <div>Expected 10K+ RPS</div>
+                        <div>46-51% success (backlog issue)</div>
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">⚡</span>
-                        <div>96% reduction in overhead</div>
+                        <div>2.05ms latency</div>
                     </div>
                 </div>
             </div>
 
-            <div class="phase-card" onclick="expandPhase(7)">
+            <div class="phase-card">
                 <div class="phase-header">
                     <div class="phase-title">Phase 7: HTTP Keep-Alive + Listen Backlog</div>
-                    <div class="phase-badge">15,000+ RPS</div>
+                    <div class="phase-badge">100% Success!</div>
                 </div>
                 <div class="phase-description">
                     Persistent connections eliminate TCP handshake. Listen backlog 10→1024 for concurrent clients.
@@ -931,9 +877,14 @@ cmake .. && make
                     </div>
                     <div class="stat-item">
                         <span class="stat-icon">⚡</span>
-                        <div>2.05ms → 0.25ms latency</div>
+                        <div>0.25ms latency (persistent)</div>
                     </div>
                 </div>
+            </div>
+
+            <div class="success-box">
+                <h4>✨ Key Learning</h4>
+                <p>The journey from 46% to 100% success in Phase 7 came from a SINGLE line change: <code>listen(server_fd, 1024)</code> instead of <code>listen(server_fd, 10)</code>. This teaches the importance of understanding system parameters, not just application code!</p>
             </div>
         </div>
 
@@ -941,40 +892,92 @@ cmake .. && make
         <div class="content-panel" id="exercises">
             <h2>💻 Hands-On Exercises</h2>
             <p style="font-size: 1.1em; line-height: 1.8; color: #7f8c8d; margin-bottom: 30px;">
-                Practice exercises organized by difficulty. Each exercise includes starter code, hints, and test cases.
+                Practice exercises organized by difficulty. Click "Start Exercise" to see detailed instructions and starter code.
             </p>
 
             <h3>⭐ Easy Exercises</h3>
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-1">
                 <div class="exercise-header">
                     <div class="exercise-title">Exercise 1: HTTP Request Validation</div>
                     <div class="difficulty-badge difficulty-easy">EASY</div>
                 </div>
                 <div class="exercise-description">
-                    Implement input validation for HTTP requests. Check method (GET/POST), path format, headers.
+                    Implement input validation for HTTP requests. Check method (GET/POST), path format, and required headers.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(1)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(1)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(1)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>Understand HTTP request structure</li>
+                        <li>Implement input validation patterns</li>
+                        <li>Handle edge cases and malformed input</li>
+                    </ul>
+                    <h4>Starter Code</h4>
+                    <pre><code>bool validateHttpRequest(const HttpRequest& req) {
+    // TODO: Validate HTTP method
+    if (req.method != "GET" && req.method != "POST") {
+        return false;
+    }
+
+    // TODO: Validate path starts with /
+
+    // TODO: Validate Content-Type header for POST
+
+    return true;
+}</code></pre>
+                    <h4>Test Cases</h4>
+                    <ul>
+                        <li>Valid GET request to /metrics</li>
+                        <li>Invalid method (PUT)</li>
+                        <li>Missing path</li>
+                        <li>POST without Content-Type header</li>
+                    </ul>
+                    <h4>Solution Hints</h4>
+                    <p>Check the existing code in <code>src/http_server.cpp</code> for header parsing. Use <code>find()</code> to search for required headers.</p>
                 </div>
             </div>
 
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-2">
                 <div class="exercise-header">
                     <div class="exercise-title">Exercise 2: JSONL File Writer</div>
                     <div class="difficulty-badge difficulty-easy">EASY</div>
                 </div>
                 <div class="exercise-description">
-                    Write metrics to file in JSONL format. Handle file operations, append-only writes.
+                    Write metrics to file in JSONL format (one JSON object per line). Handle file operations safely.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(2)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(2)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(2)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>File I/O operations in C++</li>
+                        <li>JSONL format (newline-delimited JSON)</li>
+                        <li>Error handling for file operations</li>
+                    </ul>
+                    <h4>Starter Code</h4>
+                    <pre><code>void writeMetricToFile(std::ofstream& file, const Metric& metric) {
+    // TODO: Build JSON string
+    std::string json = "{";
+    json += "\"timestamp\":\"" + formatTimestamp(metric.timestamp) + "\",";
+    json += "\"name\":\"" + metric.name + "\",";
+    json += "\"value\":" + std::to_string(metric.value);
+    json += "}\\n";
+
+    // TODO: Write to file with error handling
+    file << json;
+    file.flush();
+}</code></pre>
+                    <h4>Expected Output</h4>
+                    <pre><code>{"timestamp":"2025-10-04T12:00:00.000Z","name":"cpu_usage","value":75.5}
+{"timestamp":"2025-10-04T12:00:01.000Z","name":"memory","value":8192}</code></pre>
                 </div>
             </div>
 
             <h3>⭐⭐ Medium Exercises</h3>
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-3">
                 <div class="exercise-header">
                     <div class="exercise-title">Exercise 3: Sliding Window Rate Limiter</div>
                     <div class="difficulty-badge difficulty-medium">MEDIUM</div>
@@ -983,80 +986,223 @@ cmake .. && make
                     Implement sliding window algorithm. Track requests per client, enforce 100 req/sec limit.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(3)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(3)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(3)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>Sliding window algorithm implementation</li>
+                        <li>Time-based data structures (deque with timestamps)</li>
+                        <li>Per-client tracking with maps</li>
+                    </ul>
+                    <h4>Starter Code</h4>
+                    <pre><code>class RateLimiter {
+private:
+    size_t max_requests_;
+    std::unordered_map<std::string, std::deque<TimePoint>> client_requests_;
+
+public:
+    bool allow_request(const std::string& client_id) {
+        auto now = std::chrono::steady_clock::now();
+        auto& queue = client_requests_[client_id];
+
+        // TODO: Remove timestamps older than 1 second
+        while (!queue.empty() &&
+               std::chrono::duration_cast<std::chrono::seconds>(
+                   now - queue.front()).count() >= 1) {
+            queue.pop_front();
+        }
+
+        // TODO: Check if under limit and add new timestamp
+        if (queue.size() < max_requests_) {
+            queue.push_back(now);
+            return true;
+        }
+        return false;
+    }
+};</code></pre>
+                    <h4>Test Cases</h4>
+                    <ul>
+                        <li>100 requests in 1 second: all allowed</li>
+                        <li>101 requests in 1 second: last one denied</li>
+                        <li>50 requests, wait 1s, 50 more: all allowed</li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-4">
                 <div class="exercise-header">
                     <div class="exercise-title">Exercise 4: Custom JSON Parser</div>
                     <div class="difficulty-badge difficulty-medium">MEDIUM</div>
                 </div>
                 <div class="exercise-description">
-                    Build single-pass JSON parser for {timestamp, name, value}. O(n) complexity, no regex.
+                    Build single-pass JSON parser for metrics format. O(n) complexity, no regex.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(4)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(4)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(4)">Toggle Details</button>
                 </div>
-            </div>
-
-            <div class="exercise-card">
-                <div class="exercise-header">
-                    <div class="exercise-title">Exercise 5: Producer-Consumer Queue</div>
-                    <div class="difficulty-badge difficulty-medium">MEDIUM</div>
-                </div>
-                <div class="exercise-description">
-                    Implement async I/O with producer-consumer pattern. Use std::queue, mutex, condition_variable.
-                </div>
-                <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(5)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(5)">Show Hints</button>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>Parsing algorithms and state machines</li>
+                        <li>Performance optimization (O(n²) to O(n))</li>
+                        <li>String processing without regex overhead</li>
+                    </ul>
+                    <h4>Algorithm Overview</h4>
+                    <p>Parse JSON in a single pass using state machine:</p>
+                    <ol>
+                        <li>Find "metrics" field</li>
+                        <li>Enter array parsing mode</li>
+                        <li>For each object, extract name, value, type fields</li>
+                        <li>Return MetricBatch</li>
+                    </ol>
+                    <h4>Performance Goal</h4>
+                    <p>Parse 1000 metrics in under 1ms. See <code>src/ingestion_service.cpp</code> for the optimized implementation.</p>
                 </div>
             </div>
 
             <h3>⭐⭐⭐ Hard Exercises</h3>
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-5">
                 <div class="exercise-header">
-                    <div class="exercise-title">Exercise 6: Lock-Free Ring Buffer</div>
+                    <div class="exercise-title">Exercise 5: Lock-Free Ring Buffer</div>
                     <div class="difficulty-badge difficulty-hard">HARD</div>
                 </div>
                 <div class="exercise-description">
-                    Build wait-free ring buffer using std::atomic. Handle memory ordering, ABA problem.
+                    Build wait-free ring buffer using std::atomic. Handle memory ordering, single-writer/single-reader pattern.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(6)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(6)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(5)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>Lock-free data structures</li>
+                        <li>Memory ordering (acquire/release semantics)</li>
+                        <li>Atomic operations and race conditions</li>
+                    </ul>
+                    <h4>Key Concepts</h4>
+                    <pre><code>struct RingBuffer {
+    static constexpr size_t SIZE = 1024;
+    std::atomic<size_t> write_index{0};
+    std::atomic<size_t> read_index{0};
+    Event buffer[SIZE];
+
+    // Writer thread
+    void write(const Event& event) {
+        size_t idx = write_index.load(std::memory_order_relaxed);
+        buffer[idx % SIZE] = event;
+        // Release ensures buffer write visible before index update
+        write_index.store(idx + 1, std::memory_order_release);
+    }
+
+    // Reader thread
+    bool read(Event& event) {
+        size_t r = read_index.load(std::memory_order_acquire);
+        size_t w = write_index.load(std::memory_order_acquire);
+        if (r >= w) return false;
+
+        event = buffer[r % SIZE];
+        read_index.store(r + 1, std::memory_order_release);
+        return true;
+    }
+};</code></pre>
+                    <h4>Challenge</h4>
+                    <p>Implement this in <code>include/ingestion_service.h</code> and verify with ThreadSanitizer that it's race-free.</p>
                 </div>
             </div>
 
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-6">
                 <div class="exercise-header">
-                    <div class="exercise-title">Exercise 7: Thread Pool Implementation</div>
+                    <div class="exercise-title">Exercise 6: Thread Pool Implementation</div>
                     <div class="difficulty-badge difficulty-hard">HARD</div>
                 </div>
                 <div class="exercise-description">
                     Create thread pool with fixed workers. Task queue, worker threads, graceful shutdown.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(7)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(7)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(6)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>Thread pool architecture</li>
+                        <li>Producer-consumer with condition variables</li>
+                        <li>Graceful shutdown patterns</li>
+                    </ul>
+                    <h4>Architecture</h4>
+                    <pre><code>class ThreadPool {
+private:
+    std::vector<std::thread> workers_;
+    std::queue<std::function<void()>> tasks_;
+    std::mutex queue_mutex_;
+    std::condition_variable cv_;
+    std::atomic<bool> stop_{false};
+
+public:
+    ThreadPool(size_t num_threads) {
+        for (size_t i = 0; i < num_threads; ++i) {
+            workers_.emplace_back([this] {
+                while (true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(queue_mutex_);
+                        cv_.wait(lock, [this] {
+                            return stop_ || !tasks_.empty();
+                        });
+                        if (stop_ && tasks_.empty()) return;
+                        task = std::move(tasks_.front());
+                        tasks_.pop();
+                    }
+                    task();
+                }
+            });
+        }
+    }
+
+    bool enqueue(std::function<void()> task) {
+        {
+            std::lock_guard<std::mutex> lock(queue_mutex_);
+            tasks_.push(std::move(task));
+        }
+        cv_.notify_one();
+        return true;
+    }
+};</code></pre>
+                    <h4>See Full Implementation</h4>
+                    <p>Check <code>include/thread_pool.h</code> and <code>src/thread_pool.cpp</code> for the complete implementation.</p>
                 </div>
             </div>
 
             <h3>⭐⭐⭐⭐ Expert Exercises</h3>
-            <div class="exercise-card">
+            <div class="exercise-card" id="exercise-7">
                 <div class="exercise-header">
-                    <div class="exercise-title">Exercise 8: Distributed Rate Limiting</div>
+                    <div class="exercise-title">Exercise 7: HTTP Keep-Alive Implementation</div>
                     <div class="difficulty-badge difficulty-expert">EXPERT</div>
                 </div>
                 <div class="exercise-description">
-                    Implement distributed rate limiter using Redis. Handle clock skew, network partitions.
+                    Implement persistent connections with proper timeout, header parsing, and connection lifecycle management.
                 </div>
                 <div class="exercise-actions">
-                    <button class="btn btn-primary" onclick="showExerciseDetails(8)">Start Exercise</button>
-                    <button class="btn btn-secondary" onclick="showHints(8)">Show Hints</button>
+                    <button class="btn btn-primary" onclick="toggleExercise(7)">Toggle Details</button>
+                </div>
+                <div class="exercise-content">
+                    <h4>Learning Objectives</h4>
+                    <ul>
+                        <li>HTTP connection lifecycle</li>
+                        <li>Socket timeout configuration</li>
+                        <li>Connection header parsing and generation</li>
+                    </ul>
+                    <h4>Implementation Steps</h4>
+                    <ol>
+                        <li>Set socket timeout: <code>setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, ...)</code></li>
+                        <li>Loop to read multiple requests on same connection</li>
+                        <li>Parse "Connection" header from client</li>
+                        <li>Add "Connection: keep-alive" to responses</li>
+                        <li>Break loop on timeout or "Connection: close"</li>
+                    </ol>
+                    <h4>Performance Impact</h4>
+                    <p>Phase 6 → Phase 7: 46% success → 100% success, 2.05ms → 0.25ms latency</p>
+                    <p>See <code>docs/phase7_keep_alive_results.md</code> for complete analysis.</p>
                 </div>
             </div>
         </div>
@@ -1069,57 +1215,87 @@ cmake .. && make
             </p>
 
             <div class="resource-grid">
-                <div class="resource-card">
-                    <div class="resource-icon">📚</div>
-                    <div class="resource-title">Documentation</div>
-                    <div class="resource-description">
-                        Repository docs: CLAUDE.md, architecture_comparison.md, ring_buffer_implementation.md
+                <a href="CLAUDE.md" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">📚</div>
+                        <div class="resource-title">CLAUDE.md</div>
+                        <div class="resource-description">
+                            Project overview, optimization phases, and development methodology
+                        </div>
                     </div>
-                </div>
-                <div class="resource-card">
-                    <div class="resource-icon">🎓</div>
-                    <div class="resource-title">Principal Engineer Path</div>
-                    <div class="resource-description">
-                        Advanced learning path covering profiling, concurrency, distributed systems
+                </a>
+                <a href="docs/PRINCIPAL_ENGINEER_LEARNING_PATH.md" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">🎓</div>
+                        <div class="resource-title">Principal Engineer Path</div>
+                        <div class="resource-description">
+                            Advanced learning path covering profiling, concurrency, distributed systems
+                        </div>
                     </div>
-                </div>
-                <div class="resource-card">
-                    <div class="resource-icon">🌳</div>
-                    <div class="resource-title">Decision Tree</div>
-                    <div class="resource-description">
-                        Interactive visualization of all technical decisions and trade-offs
+                </a>
+                <a href="docs/index.html" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">🌳</div>
+                        <div class="resource-title">Decision Tree</div>
+                        <div class="resource-description">
+                            Interactive visualization of all technical decisions and trade-offs
+                        </div>
                     </div>
-                </div>
-                <div class="resource-card">
-                    <div class="resource-icon">🔧</div>
-                    <div class="resource-title">Profiling Tools</div>
-                    <div class="resource-description">
-                        perf, valgrind, strace, flamegraphs, ThreadSanitizer
+                </a>
+                <a href="docs/ring_buffer_implementation.md" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">⚡</div>
+                        <div class="resource-title">Ring Buffer Deep Dive</div>
+                        <div class="resource-description">
+                            Lock-free data structures with memory ordering explained
+                        </div>
                     </div>
-                </div>
-                <div class="resource-card">
-                    <div class="resource-icon">📊</div>
-                    <div class="resource-title">Performance Testing</div>
-                    <div class="resource-description">
-                        Load testing scripts, systematic bottleneck identification
+                </a>
+                <a href="docs/phase7_keep_alive_results.md" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">🔬</div>
+                        <div class="resource-title">Phase 7 Analysis</div>
+                        <div class="resource-description">
+                            Complete breakdown of HTTP Keep-Alive and listen backlog optimization
+                        </div>
                     </div>
-                </div>
-                <div class="resource-card">
-                    <div class="resource-icon">💬</div>
-                    <div class="resource-title">Community</div>
-                    <div class="resource-description">
-                        GitHub discussions, issues, code reviews
+                </a>
+                <a href="https://github.com/kapil0x/MetricsStream" style="text-decoration: none;">
+                    <div class="resource-card">
+                        <div class="resource-icon">💬</div>
+                        <div class="resource-title">GitHub Repository</div>
+                        <div class="resource-description">
+                            Source code, issues, discussions, and contributions
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
 
             <h3>External Resources</h3>
             <div class="info-box">
                 <h4>📖 Recommended Reading</h4>
-                <ul style="margin-left: 20px; margin-top: 10px; line-height: 1.8;">
-                    <li><strong>Books:</strong> "The Linux Programming Interface", "C++ Concurrency in Action"</li>
-                    <li><strong>Papers:</strong> "Lock-Free Data Structures", "The Art of Multiprocessor Programming"</li>
-                    <li><strong>Tools:</strong> Brendan Gregg's performance tools, Linux perf tutorial</li>
+                <ul>
+                    <li><strong>Books:</strong>
+                        <ul>
+                            <li>"The Linux Programming Interface" by Michael Kerrisk</li>
+                            <li>"C++ Concurrency in Action" by Anthony Williams</li>
+                            <li>"Systems Performance" by Brendan Gregg</li>
+                        </ul>
+                    </li>
+                    <li><strong>Papers:</strong>
+                        <ul>
+                            <li>"The Art of Multiprocessor Programming" - Lock-free algorithms</li>
+                            <li>"Memory Barriers: a Hardware View for Software Hackers"</li>
+                        </ul>
+                    </li>
+                    <li><strong>Tools:</strong>
+                        <ul>
+                            <li>perf - Linux profiling with performance counters</li>
+                            <li>valgrind - Memory debugging and profiling</li>
+                            <li>ThreadSanitizer - Data race detection</li>
+                            <li>Flamegraphs - Visualization for profiling data</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -1145,7 +1321,7 @@ cmake .. && make
             </div>
 
             <h3>Key Decisions Documented</h3>
-            <ul style="margin-left: 20px; margin-top: 15px; line-height: 1.8;">
+            <ul>
                 <li><strong>Phase 1:</strong> Thread-per-request vs. thread pool vs. async I/O</li>
                 <li><strong>Phase 2:</strong> Synchronous writes vs. producer-consumer vs. memory-only buffer</li>
                 <li><strong>Phase 3:</strong> Regex parsing vs. JSON library vs. custom parser</li>
@@ -1154,38 +1330,1135 @@ cmake .. && make
                 <li><strong>Phase 6:</strong> Thread-per-request vs. event loop vs. thread pool</li>
                 <li><strong>Phase 7:</strong> Small backlog vs. Keep-Alive only vs. both optimizations</li>
             </ul>
+
+            <h3>Learning from Decisions</h3>
+            <div class="success-box">
+                <p>Every decision point shows:</p>
+                <ul>
+                    <li>Problem statement and measured bottleneck</li>
+                    <li>Alternatives considered with trade-offs</li>
+                    <li>Solution chosen and rationale</li>
+                    <li>Performance impact (before/after numbers)</li>
+                    <li>Files affected and implementation notes</li>
+                </ul>
+            </div>
         </div>
 
         <div class="footer">
-            <p>Built with ❤️ by the MetricsStream community</p>
+            <p>Built with ❤️ for the MetricsStream learning community</p>
             <p style="margin-top: 10px; font-size: 13px;">
-                <a href="https://github.com/kapil0x/MetricsStream" style="color: #667eea; text-decoration: none;">GitHub</a> |
-                <a href="docs/PRINCIPAL_ENGINEER_LEARNING_PATH.md" style="color: #667eea; text-decoration: none;">Principal Engineer Path</a> |
-                <a href="README.md" style="color: #667eea; text-decoration: none;">README</a>
+                <a href="https://github.com/kapil0x/MetricsStream">GitHub</a> |
+                <a href="docs/PRINCIPAL_ENGINEER_LEARNING_PATH.md">Principal Engineer Path</a> |
+                <a href="README.md">README</a>
             </p>
         </div>
     </div>
 
     <script>
+        // Chapter data with full content
+        const chapters = [
+            {
+                id: 1,
+                title: "HTTP Server from Scratch",
+                description: "Build HTTP server using raw sockets (socket, bind, listen, accept)",
+                content: `
+                    <h4>📚 Learning Objectives</h4>
+                    <ul>
+                        <li>Understand TCP/IP socket programming fundamentals</li>
+                        <li>Master the Berkeley sockets API (socket, bind, listen, accept)</li>
+                        <li>Build a working HTTP server without any libraries</li>
+                        <li>Handle network errors and edge cases</li>
+                    </ul>
+
+                    <h4>🔍 Why Build from Scratch?</h4>
+                    <p>Building an HTTP server from raw sockets teaches you exactly how web servers work under the hood. No magic, no abstractions - just you and the operating system. This knowledge is crucial for:</p>
+                    <ul>
+                        <li><strong>Performance optimization:</strong> Understanding what happens at each syscall</li>
+                        <li><strong>Debugging:</strong> Knowing where bottlenecks occur</li>
+                        <li><strong>System design:</strong> Making informed architectural decisions</li>
+                    </ul>
+
+                    <h4>🛠️ Berkeley Sockets API</h4>
+
+                    <h5>1. socket() - Create Communication Endpoint</h5>
+                    <pre><code>int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+// AF_INET: IPv4 address family
+// SOCK_STREAM: TCP (reliable, connection-oriented)
+// 0: Protocol (0 = default for SOCK_STREAM = TCP)
+
+if (server_fd < 0) {
+    perror("socket creation failed");
+    exit(EXIT_FAILURE);
+}</code></pre>
+                    <p><strong>What happens:</strong> OS allocates a socket descriptor (file descriptor for network I/O). Returns -1 on error.</p>
+
+                    <h5>2. setsockopt() - Configure Socket Options</h5>
+                    <pre><code>int opt = 1;
+setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+// SOL_SOCKET: Socket-level option
+// SO_REUSEADDR: Allow reuse of local addresses (avoid "Address already in use")</code></pre>
+                    <p><strong>Why SO_REUSEADDR?</strong> When you restart the server, the port might still be in TIME_WAIT state from previous connections. This option lets you bind immediately.</p>
+
+                    <h5>3. bind() - Assign Address to Socket</h5>
+                    <pre><code>struct sockaddr_in address;
+address.sin_family = AF_INET;           // IPv4
+address.sin_addr.s_addr = INADDR_ANY;   // 0.0.0.0 (all interfaces)
+address.sin_port = htons(8080);         // Port 8080 (network byte order)
+
+if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    perror("bind failed");
+    exit(EXIT_FAILURE);
+}</code></pre>
+                    <p><strong>What happens:</strong> OS associates the socket with IP:port. Now incoming connections to 0.0.0.0:8080 will be routed to this socket.</p>
+                    <p><strong>Network byte order (htons):</strong> Network protocols use big-endian. <code>htons()</code> converts host byte order to network byte order.</p>
+
+                    <h5>4. listen() - Mark Socket as Passive</h5>
+                    <pre><code>if (listen(server_fd, 10) < 0) {
+    perror("listen failed");
+    exit(EXIT_FAILURE);
+}
+// Backlog = 10: kernel can queue up to 10 pending connections</code></pre>
+                    <p><strong>What happens:</strong> Socket transitions from CLOSED to LISTEN state. Kernel starts accepting SYN packets and queuing connections.</p>
+                    <p><strong>Backlog parameter:</strong> Maximum length of pending connection queue. If queue is full, new connections are refused. (We'll fix this in Phase 7!)</p>
+
+                    <h5>5. accept() - Accept Incoming Connection</h5>
+                    <pre><code>struct sockaddr_in client_addr;
+socklen_t client_len = sizeof(client_addr);
+
+int client_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len);
+if (client_socket < 0) {
+    perror("accept failed");
+    // Handle error, but server continues
+}
+
+// client_socket is now connected to the client
+// Can read() and write() like a file descriptor</code></pre>
+                    <p><strong>What happens:</strong> Blocks until a client connects. Returns new socket descriptor for this specific connection. Server socket remains in LISTEN state.</p>
+
+                    <h4>📝 Complete Server Loop</h4>
+                    <pre><code>while (running) {
+    // Accept new connection
+    int client_socket = accept(server_fd,
+                               (struct sockaddr*)&client_addr,
+                               &client_len);
+
+    if (client_socket < 0) {
+        if (errno == EINTR) continue;  // Interrupted by signal
+        perror("accept failed");
+        continue;
+    }
+
+    // Read HTTP request
+    char buffer[4096] = {0};
+    ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
+
+    if (bytes_read < 0) {
+        perror("read failed");
+        close(client_socket);
+        continue;
+    }
+
+    // Parse and handle request (next chapter!)
+    std::string request(buffer, bytes_read);
+    std::string response = handle_http_request(request);
+
+    // Send HTTP response
+    write(client_socket, response.c_str(), response.length());
+
+    // Close connection
+    close(client_socket);
+}</code></pre>
+
+                    <h4>⚠️ Error Handling</h4>
+                    <ul>
+                        <li><strong>EINTR:</strong> Syscall interrupted by signal - retry</li>
+                        <li><strong>EADDRINUSE:</strong> Port already in use - change port or use SO_REUSEADDR</li>
+                        <li><strong>ECONNRESET:</strong> Client closed connection - graceful handling</li>
+                        <li><strong>EPIPE:</strong> Write to closed socket - check before writing</li>
+                    </ul>
+
+                    <h4>🧪 Testing Your Server</h4>
+                    <pre><code># Terminal 1: Run server
+./metricstream_server
+
+# Terminal 2: Test with curl
+curl http://localhost:8080/metrics
+
+# Or with netcat (raw TCP)
+nc localhost 8080
+GET /metrics HTTP/1.1
+Host: localhost
+[blank line]</code></pre>
+
+                    <h4>💡 Key Takeaways</h4>
+                    <ul>
+                        <li>Socket is just a file descriptor - read/write like files</li>
+                        <li>Server socket vs connection socket: one listens, others communicate</li>
+                        <li>Byte order matters: always use htons/ntohs for ports</li>
+                        <li>accept() blocks - this is where concurrency comes in (Phase 1!)</li>
+                    </ul>
+
+                    <h4>📖 Further Reading</h4>
+                    <ul>
+                        <li>man 2 socket - Linux socket syscall documentation</li>
+                        <li>man 7 ip - IP protocol overview</li>
+                        <li>Beej's Guide to Network Programming - Excellent tutorial</li>
+                        <li>TCP/IP Illustrated Vol 1 - Deep dive into protocols</li>
+                    </ul>
+
+                    <h4>✏️ Exercise</h4>
+                    <p><strong>Build an echo server:</strong></p>
+                    <ol>
+                        <li>Accept connection</li>
+                        <li>Read data from client</li>
+                        <li>Write same data back (echo)</li>
+                        <li>Close connection</li>
+                        <li>Test with: <code>echo "Hello" | nc localhost 8080</code></li>
+                    </ol>
+                    <p>Bonus: Add timeout using <code>setsockopt(SO_RCVTIMEO)</code></p>
+                `
+            },
+            {
+                id: 2,
+                title: "HTTP Request Parsing",
+                description: "Parse HTTP headers, routing, validation",
+                content: `
+                    <h4>📚 Learning Objectives</h4>
+                    <ul>
+                        <li>Understand HTTP/1.1 request format</li>
+                        <li>Parse request line, headers, and body</li>
+                        <li>Handle different HTTP methods (GET, POST)</li>
+                        <li>Implement robust error handling for malformed requests</li>
+                    </ul>
+
+                    <h4>📋 HTTP Request Anatomy</h4>
+                    <pre><code>POST /metrics HTTP/1.1\\r\\n
+Host: localhost:8080\\r\\n
+Content-Type: application/json\\r\\n
+Content-Length: 87\\r\\n
+\\r\\n
+{"metrics":[{"name":"cpu","value":75.5,"type":"gauge"}]}</code></pre>
+
+                    <p><strong>Structure breakdown:</strong></p>
+                    <ol>
+                        <li><strong>Request Line:</strong> METHOD PATH VERSION</li>
+                        <li><strong>Headers:</strong> Key: Value pairs (\\r\\n terminated)</li>
+                        <li><strong>Blank Line:</strong> \\r\\n\\r\\n (separates headers from body)</li>
+                        <li><strong>Body:</strong> Optional payload (POST/PUT requests)</li>
+                    </ol>
+
+                    <h4>🔍 Parsing Strategy</h4>
+
+                    <h5>1. Read Request Line</h5>
+                    <pre><code>// Input: "POST /metrics HTTP/1.1\\r\\n"
+std::istringstream stream(request_data);
+std::string request_line;
+std::getline(stream, request_line);
+
+// Remove \\r if present
+if (!request_line.empty() && request_line.back() == '\\r') {
+    request_line.pop_back();
+}
+
+// Parse: METHOD PATH VERSION
+std::istringstream line_stream(request_line);
+HttpRequest req;
+line_stream >> req.method >> req.path >> req.version;
+
+// Validate
+if (req.method.empty() || req.path.empty()) {
+    return HttpRequest{};  // Invalid request
+}</code></pre>
+
+                    <h5>2. Parse Headers</h5>
+                    <pre><code>std::string header_line;
+while (std::getline(stream, header_line)) {
+    // Remove \\r
+    if (!header_line.empty() && header_line.back() == '\\r') {
+        header_line.pop_back();
+    }
+
+    // Blank line = end of headers
+    if (header_line.empty()) {
+        break;
+    }
+
+    // Parse "Key: Value"
+    size_t colon = header_line.find(':');
+    if (colon != std::string::npos) {
+        std::string key = header_line.substr(0, colon);
+        std::string value = header_line.substr(colon + 1);
+
+        // Trim leading whitespace from value
+        size_t start = value.find_first_not_of(" \\t");
+        if (start != std::string::npos) {
+            value = value.substr(start);
+        }
+
+        req.headers[key] = value;
+    }
+}</code></pre>
+
+                    <h5>3. Read Body (POST requests)</h5>
+                    <pre><code>// Check Content-Length header
+auto it = req.headers.find("Content-Length");
+if (it != req.headers.end()) {
+    size_t content_length = std::stoull(it->second);
+
+    // Read exactly content_length bytes
+    std::string body;
+    body.resize(content_length);
+
+    size_t total_read = 0;
+    while (total_read < content_length) {
+        ssize_t n = read(socket, &body[total_read],
+                        content_length - total_read);
+        if (n <= 0) break;
+        total_read += n;
+    }
+
+    req.body = body;
+}</code></pre>
+
+                    <h4>⚙️ Implementation in MetricStream</h4>
+                    <pre><code>HttpRequest HttpServer::parse_request(const std::string& raw) {
+    HttpRequest req;
+    std::istringstream stream(raw);
+
+    // 1. Request line
+    std::string line;
+    if (!std::getline(stream, line)) return req;
+    if (line.back() == '\\r') line.pop_back();
+
+    std::istringstream line_stream(line);
+    line_stream >> req.method >> req.path >> req.version;
+
+    // 2. Headers
+    while (std::getline(stream, line)) {
+        if (line.back() == '\\r') line.pop_back();
+        if (line.empty()) break;
+
+        size_t colon = line.find(':');
+        if (colon != std::string::npos) {
+            std::string key = line.substr(0, colon);
+            std::string value = line.substr(colon + 2); // Skip ": "
+            req.headers[key] = value;
+        }
+    }
+
+    // 3. Body (rest of stream)
+    req.body = std::string(
+        std::istreambuf_iterator<char>(stream),
+        std::istreambuf_iterator<char>()
+    );
+
+    return req;
+}</code></pre>
+
+                    <h4>🛡️ Validation & Security</h4>
+                    <pre><code>bool validate_request(const HttpRequest& req) {
+    // 1. Method validation
+    if (req.method != "GET" && req.method != "POST") {
+        return false;  // 405 Method Not Allowed
+    }
+
+    // 2. Path validation
+    if (req.path.empty() || req.path[0] != '/') {
+        return false;  // 400 Bad Request
+    }
+
+    // 3. Version validation
+    if (req.version != "HTTP/1.1" && req.version != "HTTP/1.0") {
+        return false;  // 505 HTTP Version Not Supported
+    }
+
+    // 4. Required headers
+    if (req.method == "POST") {
+        if (req.headers.find("Content-Type") == req.headers.end()) {
+            return false;  // 400 Bad Request
+        }
+        if (req.headers.find("Content-Length") == req.headers.end()) {
+            return false;  // 411 Length Required
+        }
+    }
+
+    return true;
+}</code></pre>
+
+                    <h4>🔀 Routing</h4>
+                    <pre><code>HttpResponse handle_request(const HttpRequest& req) {
+    if (!validate_request(req)) {
+        return HttpResponse{400, "Bad Request", {}};
+    }
+
+    // Route based on path
+    if (req.path == "/metrics" && req.method == "POST") {
+        return handle_metrics_ingestion(req);
+    }
+    else if (req.path == "/health" && req.method == "GET") {
+        return HttpResponse{200, "OK", {}};
+    }
+    else if (req.path == "/stats" && req.method == "GET") {
+        return handle_stats(req);
+    }
+    else {
+        return HttpResponse{404, "Not Found", {}};
+    }
+}</code></pre>
+
+                    <h4>⚠️ Edge Cases & Bugs</h4>
+                    <ul>
+                        <li><strong>Missing \\r\\n:</strong> Some clients send \\n only - handle both</li>
+                        <li><strong>Partial reads:</strong> TCP can split packets - buffer until \\r\\n\\r\\n</li>
+                        <li><strong>Case sensitivity:</strong> Headers are case-insensitive per HTTP spec</li>
+                        <li><strong>Chunked encoding:</strong> Not implemented yet (HTTP/1.1 feature)</li>
+                        <li><strong>Large bodies:</strong> Need streaming parser for huge payloads</li>
+                    </ul>
+
+                    <h4>🧪 Testing</h4>
+                    <pre><code># Valid GET request
+curl -v http://localhost:8080/health
+
+# Valid POST request
+curl -X POST http://localhost:8080/metrics \\
+  -H "Content-Type: application/json" \\
+  -d '{"metrics":[{"name":"cpu","value":50}]}'
+
+# Invalid method
+curl -X DELETE http://localhost:8080/metrics
+# Should return: 405 Method Not Allowed
+
+# Missing Content-Type
+curl -X POST http://localhost:8080/metrics -d '{}'
+# Should return: 400 Bad Request</code></pre>
+
+                    <h4>💡 Key Takeaways</h4>
+                    <ul>
+                        <li>HTTP is text-based - easy to debug with netcat</li>
+                        <li>\\r\\n line endings are REQUIRED by HTTP spec</li>
+                        <li>Headers are case-insensitive, use case-insensitive map</li>
+                        <li>Content-Length drives body reading - validate it!</li>
+                        <li>Always validate before processing - fail fast</li>
+                    </ul>
+
+                    <h4>📖 Further Reading</h4>
+                    <ul>
+                        <li>RFC 7230 - HTTP/1.1 Message Syntax</li>
+                        <li>RFC 7231 - HTTP Semantics</li>
+                        <li>MDN HTTP Messages - Visual guide</li>
+                    </ul>
+
+                    <h4>✏️ Exercise</h4>
+                    <p><strong>Add query parameter parsing:</strong></p>
+                    <ol>
+                        <li>Parse <code>/metrics?limit=10&offset=0</code></li>
+                        <li>Extract query parameters into map</li>
+                        <li>Handle URL encoding (%20 for space, etc)</li>
+                        <li>Test: <code>curl "http://localhost:8080/metrics?client=test%20user"</code></li>
+                    </ol>
+                `
+            },
+            {
+                id: 3,
+                title: "JSON Parsing Optimization",
+                description: "Custom parser: O(n²) → O(n), single-pass algorithm",
+                content: `
+                    <h4>The Problem</h4>
+                    <p>Regex-based parsing: O(n²) complexity. At 100 clients, JSON parsing became CPU bottleneck.</p>
+
+                    <h4>The Solution</h4>
+                    <p>Single-pass state machine parser for known structure:</p>
+                    <pre><code>{"metrics": [
+  {"name": "cpu", "value": 75.5, "type": "gauge"},
+  {"name": "memory", "value": 8192, "type": "gauge"}
+]}</code></pre>
+
+                    <h4>Performance Impact</h4>
+                    <ul>
+                        <li><strong>Before:</strong> Regex overhead, O(n²)</li>
+                        <li><strong>After:</strong> 80.2% success at 100 clients, 2.73ms latency</li>
+                    </ul>
+
+                    <h4>Implementation</h4>
+                    <p>See <code>parse_json_metrics_optimized()</code> in <code>src/ingestion_service.cpp</code></p>
+                `
+            },
+            {
+                id: 4,
+                title: "Rate Limiting (Sliding Window)",
+                description: "Implement sliding window rate limiter for per-client limits",
+                content: `
+                    <h4>Sliding Window Algorithm</h4>
+                    <p>Track timestamps of requests in a time window (e.g., last 1 second).</p>
+
+                    <h4>Data Structure</h4>
+                    <pre><code>std::unordered_map<string, std::deque<TimePoint>> client_requests_;
+
+bool allow_request(const string& client_id) {
+    auto now = steady_clock::now();
+    auto& queue = client_requests_[client_id];
+
+    // Remove old timestamps
+    while (!queue.empty() && now - queue.front() >= 1s) {
+        queue.pop_front();
+    }
+
+    // Check limit
+    if (queue.size() < max_requests_) {
+        queue.push_back(now);
+        return true;
+    }
+    return false;
+}</code></pre>
+
+                    <h4>Key Properties</h4>
+                    <ul>
+                        <li>Per-client tracking</li>
+                        <li>Precise rate enforcement</li>
+                        <li>Memory proportional to request rate</li>
+                    </ul>
+                `
+            },
+            {
+                id: 5,
+                title: "File I/O and Persistence",
+                description: "Write metrics to JSONL format, handle file operations",
+                content: `
+                    <h4>JSONL Format</h4>
+                    <p>One JSON object per line (newline-delimited JSON):</p>
+                    <pre><code>{"timestamp":"2025-10-04T12:00:00Z","name":"cpu","value":75.5}
+{"timestamp":"2025-10-04T12:00:01Z","name":"memory","value":8192}</code></pre>
+
+                    <h4>Benefits</h4>
+                    <ul>
+                        <li>Append-only (fast writes)</li>
+                        <li>Human-readable</li>
+                        <li>Streaming-friendly</li>
+                        <li>Simple parsing (line-by-line)</li>
+                    </ul>
+
+                    <h4>Implementation</h4>
+                    <p>See <code>store_metrics_to_file()</code> in <code>src/ingestion_service.cpp</code></p>
+                `
+            },
+            {
+                id: 6,
+                title: "Thread-Per-Request (Phase 1)",
+                description: "Spawn threads for concurrent request handling",
+                content: `
+                    <h4>The Problem</h4>
+                    <p>Sequential processing → head-of-line blocking. One slow request blocks all others.</p>
+
+                    <h4>The Solution</h4>
+                    <pre><code>while (running_) {
+    int client_socket = accept(server_fd, ...);
+
+    std::thread([client_socket]() {
+        handle_request(client_socket);
+        close(client_socket);
+    }).detach();
+}</code></pre>
+
+                    <h4>Performance Impact</h4>
+                    <p><strong>20 clients: 81% → 88% success rate</strong></p>
+
+                    <h4>Trade-offs</h4>
+                    <ul>
+                        <li>✅ Simple implementation</li>
+                        <li>✅ True parallelism</li>
+                        <li>❌ Thread creation overhead (500μs)</li>
+                        <li>❌ Resource exhaustion at scale</li>
+                    </ul>
+                `
+            },
+            {
+                id: 7,
+                title: "Async I/O (Phase 2)",
+                description: "Producer-consumer pattern, background writer thread",
+                content: `
+                    <h4>The Problem</h4>
+                    <p>File I/O blocking request threads → timeouts under load.</p>
+
+                    <h4>Producer-Consumer Pattern</h4>
+                    <pre><code>// Request thread (producer)
+void handle_request() {
+    auto metrics = parse_metrics(request);
+    queue.push(metrics);  // Non-blocking
+    return response;
+}
+
+// Background thread (consumer)
+void async_writer() {
+    while (true) {
+        auto metrics = queue.pop();  // Blocking wait
+        write_to_file(metrics);
+    }
+}</code></pre>
+
+                    <h4>Performance Impact</h4>
+                    <p><strong>50 clients: 59% → 66% success rate</strong></p>
+
+                    <h4>Key Benefit</h4>
+                    <p>Decouples I/O from request processing. Request threads never wait on disk.</p>
+                `
+            },
+            {
+                id: 8,
+                title: "Hash-Based Mutex Pool (Phase 4)",
+                description: "Per-client locking to eliminate serialization",
+                content: `
+                    <h4>The Problem</h4>
+                    <p>Double mutex: global rate limiter mutex + global metrics mutex → all requests serialized!</p>
+
+                    <h4>Hash-Based Solution</h4>
+                    <pre><code>static constexpr size_t MUTEX_POOL_SIZE = 64;
+std::array<std::mutex, MUTEX_POOL_SIZE> client_mutex_pool_;
+
+std::mutex& get_client_mutex(const string& client_id) {
+    std::hash<string> hasher;
+    size_t index = hasher(client_id) % MUTEX_POOL_SIZE;
+    return client_mutex_pool_[index];
+}</code></pre>
+
+                    <h4>Benefits</h4>
+                    <ul>
+                        <li>Different clients process in parallel</li>
+                        <li>No constructor races (pre-allocated array)</li>
+                        <li>Cache-friendly (fixed size)</li>
+                    </ul>
+                `
+            },
+            {
+                id: 9,
+                title: "Lock-Free Ring Buffer (Phase 5)",
+                description: "Atomics, memory ordering, wait-free data structures",
+                content: `
+                    <h4>Why Lock-Free?</h4>
+                    <p>Even per-client mutexes have overhead. Atomics eliminate ALL mutex operations.</p>
+
+                    <h4>Memory Ordering</h4>
+                    <pre><code>// Writer (request thread)
+size_t idx = write_index.load(memory_order_relaxed);
+buffer[idx % SIZE] = event;
+write_index.store(idx + 1, memory_order_release);
+
+// Reader (flush thread)
+size_t r = read_index.load(memory_order_acquire);
+size_t w = write_index.load(memory_order_acquire);
+for (size_t i = r; i < w; ++i) {
+    process(buffer[i % SIZE]);
+}
+read_index.store(w, memory_order_release);</code></pre>
+
+                    <h4>Key Concepts</h4>
+                    <ul>
+                        <li><strong>Acquire</strong>: See all writes before atomic store</li>
+                        <li><strong>Release</strong>: Make all writes visible before atomic load</li>
+                        <li><strong>Relaxed</strong>: No ordering guarantees (fast)</li>
+                    </ul>
+
+                    <h4>Deep Dive</h4>
+                    <p>See <code>docs/ring_buffer_implementation.md</code> for complete explanation.</p>
+                `
+            },
+            {
+                id: 10,
+                title: "Thread Pool (Phase 6)",
+                description: "Replace thread-per-request with fixed worker pool",
+                content: `
+                    <h4>The Revelation</h4>
+                    <p>Profiling showed: <strong>Thread creation (500μs) >> Request processing (5μs)</strong></p>
+                    <p>100x overhead from threading model!</p>
+
+                    <h4>Thread Pool Design</h4>
+                    <pre><code>class ThreadPool {
+    vector<thread> workers_;
+    queue<function<void()>> tasks_;
+    mutex queue_mutex_;
+    condition_variable cv_;
+
+    bool enqueue(function<void()> task) {
+        {
+            lock_guard<mutex> lock(queue_mutex_);
+            tasks_.push(move(task));
+        }
+        cv_.notify_one();
+        return true;
+    }
+};</code></pre>
+
+                    <h4>Result</h4>
+                    <p>Expected 10K+ RPS. Actual: 46-51% success. Why? <strong>Listen backlog bottleneck!</strong></p>
+
+                    <h4>Lesson</h4>
+                    <p>Always measure. Expected performance != actual performance.</p>
+                `
+            },
+            {
+                id: 11,
+                title: "HTTP Keep-Alive (Phase 7)",
+                description: "Persistent connections, listen backlog tuning",
+                content: `
+                    <h4>Two Critical Fixes</h4>
+
+                    <h5>1. Listen Backlog: 10 → 1024</h5>
+                    <pre><code>// Before
+listen(server_fd, 10);  // Only 10 pending connections!
+
+// After
+listen(server_fd, 1024);  // Handle 100 concurrent clients</code></pre>
+
+                    <h5>2. HTTP Keep-Alive</h5>
+                    <pre><code>while (keep_alive) {
+    ssize_t bytes = read(socket, buffer, sizeof(buffer));
+    if (bytes <= 0) break;
+
+    auto request = parse_request(buffer);
+    auto response = handle_request(request);
+
+    if (request.headers["Connection"] == "close") {
+        keep_alive = false;
+    }
+    response.headers["Connection"] = "keep-alive";
+    write(socket, response);
+}</code></pre>
+
+                    <h4>Performance Impact</h4>
+                    <ul>
+                        <li><strong>Success rate:</strong> 46% → 100% (+54pp)</li>
+                        <li><strong>Latency:</strong> 2.05ms → 0.25ms (persistent)</li>
+                    </ul>
+
+                    <h4>Key Insight</h4>
+                    <p>The ONE line change (<code>listen(fd, 1024)</code>) fixed everything. Sometimes the biggest gains come from understanding system parameters, not algorithms.</p>
+                `
+            },
+            {
+                id: 12,
+                title: "Performance Profiling",
+                description: "perf, valgrind, strace, flamegraphs",
+                content: `
+                    <h4>Essential Tools</h4>
+
+                    <h5>1. perf (Linux Performance Counter)</h5>
+                    <pre><code># Record CPU profile
+perf record -g ./metricstream_server
+
+# View hotspots
+perf report</code></pre>
+
+                    <h5>2. Valgrind (Callgrind)</h5>
+                    <pre><code># Profile function calls
+valgrind --tool=callgrind ./metricstream_server
+
+# Visualize with kcachegrind
+kcachegrind callgrind.out.*</code></pre>
+
+                    <h5>3. strace (System Call Tracer)</h5>
+                    <pre><code># Count syscalls
+strace -c ./metricstream_server
+
+# See timing
+strace -T ./metricstream_server</code></pre>
+
+                    <h5>4. Flamegraphs</h5>
+                    <pre><code>perf record -F 99 -g ./metricstream_server
+perf script | flamegraph.pl > flame.svg</code></pre>
+
+                    <h4>What We Discovered</h4>
+                    <ul>
+                        <li>Thread creation: 500μs (100x overhead!)</li>
+                        <li>Mutex contention in rate limiting</li>
+                        <li>JSON parsing CPU hotspot</li>
+                    </ul>
+                `
+            },
+            {
+                id: 13,
+                title: "Load Testing",
+                description: "Systematic testing, bottleneck identification",
+                content: `
+                    <h4>Load Testing Strategy</h4>
+
+                    <h5>Incremental Load</h5>
+                    <pre><code>./load_test 8080 20 10   # 20 clients, 10 req each
+./load_test 8080 50 10   # 50 clients
+./load_test 8080 100 10  # 100 clients</code></pre>
+
+                    <h5>Metrics to Track</h5>
+                    <ul>
+                        <li><strong>Success rate:</strong> % of requests that succeed</li>
+                        <li><strong>Average latency:</strong> Time per request</li>
+                        <li><strong>Throughput:</strong> Requests per second</li>
+                        <li><strong>CPU usage:</strong> System load</li>
+                    </ul>
+
+                    <h4>Identifying Bottlenecks</h4>
+                    <ol>
+                        <li>Success rate drops → System capacity exceeded</li>
+                        <li>High latency → Blocking operations (I/O, locks)</li>
+                        <li>Low latency, low throughput → Thread starvation</li>
+                        <li>High CPU → Computational bottleneck</li>
+                    </ol>
+
+                    <h4>See Script</h4>
+                    <p><code>performance_test.sh</code> - Automated testing at multiple load levels</p>
+                `
+            },
+            {
+                id: 14,
+                title: "Production Engineering",
+                description: "Monitoring, alerting, observability",
+                content: `
+                    <h4>Observability Pillars</h4>
+
+                    <h5>1. Metrics</h5>
+                    <ul>
+                        <li>Request rate, latency, error rate</li>
+                        <li>System metrics (CPU, memory, disk I/O)</li>
+                        <li>Application metrics (queue depth, thread pool utilization)</li>
+                    </ul>
+
+                    <h5>2. Logging</h5>
+                    <ul>
+                        <li>Structured logging (JSON format)</li>
+                        <li>Log levels (DEBUG, INFO, WARN, ERROR)</li>
+                        <li>Centralized aggregation (ELK, Splunk)</li>
+                    </ul>
+
+                    <h5>3. Tracing</h5>
+                    <ul>
+                        <li>Distributed tracing (Jaeger, Zipkin)</li>
+                        <li>Request ID propagation</li>
+                        <li>Span creation for key operations</li>
+                    </ul>
+
+                    <h4>Alerting Strategy</h4>
+                    <pre><code>// Example: Alert on high error rate
+if (error_rate > 5% for 5 minutes) {
+    alert("MetricStream error rate elevated");
+}</code></pre>
+
+                    <h4>Key Metrics for MetricStream</h4>
+                    <ul>
+                        <li>Request success rate (SLO: 99.9%)</li>
+                        <li>p50, p95, p99 latency</li>
+                        <li>Rate limiting decisions (allowed vs denied)</li>
+                        <li>File write queue depth</li>
+                    </ul>
+                `
+            },
+            {
+                id: 15,
+                title: "Distributed Systems Basics",
+                description: "Sharding, replication, consistency",
+                content: `
+                    <h4>Scaling Challenges</h4>
+                    <p>Single server limits:</p>
+                    <ul>
+                        <li>CPU/Memory capacity</li>
+                        <li>Disk I/O throughput</li>
+                        <li>Network bandwidth</li>
+                        <li>Geographic latency</li>
+                    </ul>
+
+                    <h4>Horizontal Scaling Strategies</h4>
+
+                    <h5>1. Sharding (Partitioning)</h5>
+                    <p>Split data across multiple servers:</p>
+                    <pre><code>server = hash(client_id) % num_servers
+route_request(server, request)</code></pre>
+
+                    <h5>2. Replication</h5>
+                    <ul>
+                        <li><strong>Primary-Replica:</strong> One writer, multiple readers</li>
+                        <li><strong>Multi-Primary:</strong> Multiple writers (conflict resolution needed)</li>
+                    </ul>
+
+                    <h5>3. Consistency Models</h5>
+                    <ul>
+                        <li><strong>Strong consistency:</strong> All nodes see same data</li>
+                        <li><strong>Eventual consistency:</strong> Nodes converge over time</li>
+                        <li><strong>CAP theorem:</strong> Consistency, Availability, Partition tolerance (pick 2)</li>
+                    </ul>
+
+                    <h4>MetricStream Distributed Design</h4>
+                    <p>Future architecture: Shard by client_id, replicate for availability, eventual consistency for metrics.</p>
+                `
+            },
+            {
+                id: 16,
+                title: "epoll/kqueue - I/O Multiplexing",
+                description: "Event-driven architecture for 10K+ connections",
+                content: `
+                    <h4>The C10K Problem</h4>
+                    <p>Thread-per-connection doesn't scale to 10,000 concurrent connections. Solution: Event-driven I/O.</p>
+
+                    <h4>epoll (Linux) / kqueue (BSD/macOS)</h4>
+                    <pre><code>int epoll_fd = epoll_create1(0);
+
+struct epoll_event event;
+event.events = EPOLLIN | EPOLLET;  // Edge-triggered
+event.data.fd = server_fd;
+epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event);
+
+while (true) {
+    struct epoll_event events[MAX_EVENTS];
+    int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+
+    for (int i = 0; i < nfds; ++i) {
+        if (events[i].data.fd == server_fd) {
+            // New connection
+            int client = accept(server_fd, ...);
+            epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &event);
+        } else {
+            // Data ready on existing connection
+            handle_client(events[i].data.fd);
+        }
+    }
+}</code></pre>
+
+                    <h4>Benefits</h4>
+                    <ul>
+                        <li>Single thread handles thousands of connections</li>
+                        <li>O(1) event notification (vs select's O(n))</li>
+                        <li>Efficient for I/O-bound workloads</li>
+                    </ul>
+                `
+            },
+            {
+                id: 17,
+                title: "HTTP/2 and Protocol Buffers",
+                description: "Binary protocols for efficiency",
+                content: `
+                    <h4>HTTP/2 Improvements</h4>
+                    <ul>
+                        <li><strong>Multiplexing:</strong> Multiple requests on one connection</li>
+                        <li><strong>Binary framing:</strong> Faster than text parsing</li>
+                        <li><strong>Header compression:</strong> HPACK reduces overhead</li>
+                        <li><strong>Server push:</strong> Proactive resource delivery</li>
+                    </ul>
+
+                    <h4>Protocol Buffers</h4>
+                    <p>Efficient binary serialization (vs JSON text):</p>
+                    <pre><code>// metrics.proto
+message Metric {
+    string name = 1;
+    double value = 2;
+    int64 timestamp = 3;
+}
+
+message MetricBatch {
+    repeated Metric metrics = 1;
+}
+
+// 10-100x smaller than JSON
+// 10-100x faster to parse</code></pre>
+
+                    <h4>Trade-offs</h4>
+                    <ul>
+                        <li>✅ Performance (speed, bandwidth)</li>
+                        <li>❌ Human readability</li>
+                        <li>❌ Schema coupling</li>
+                    </ul>
+                `
+            },
+            {
+                id: 18,
+                title: "Time-Series Database Design",
+                description: "ClickHouse integration, columnar storage",
+                content: `
+                    <h4>Why Time-Series DB?</h4>
+                    <p>JSONL files don't scale for queries:</p>
+                    <ul>
+                        <li>No indexing → full scan every query</li>
+                        <li>No compression → huge storage</li>
+                        <li>No aggregation → can't compute stats</li>
+                    </ul>
+
+                    <h4>ClickHouse Schema</h4>
+                    <pre><code>CREATE TABLE metrics (
+    timestamp DateTime64(3),
+    name String,
+    value Float64,
+    tags Map(String, String)
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (name, timestamp);</code></pre>
+
+                    <h4>Query Examples</h4>
+                    <pre><code>-- Average CPU over last hour
+SELECT avg(value)
+FROM metrics
+WHERE name = 'cpu_usage'
+  AND timestamp > now() - INTERVAL 1 HOUR;
+
+-- Top 10 clients by request count
+SELECT tags['client_id'], count() as requests
+FROM metrics
+WHERE name = 'request'
+GROUP BY tags['client_id']
+ORDER BY requests DESC
+LIMIT 10;</code></pre>
+
+                    <h4>Columnar Storage Benefits</h4>
+                    <ul>
+                        <li>Compression: 10-100x reduction</li>
+                        <li>Query speed: Only read needed columns</li>
+                        <li>Aggregation: SIMD vectorization</li>
+                    </ul>
+                `
+            },
+            {
+                id: 19,
+                title: "Distributed Consensus (Raft)",
+                description: "Leader election, log replication",
+                content: `
+                    <h4>Why Consensus?</h4>
+                    <p>Multiple servers need to agree on:</p>
+                    <ul>
+                        <li>Who is the leader?</li>
+                        <li>What is the data?</li>
+                        <li>In what order did writes occur?</li>
+                    </ul>
+
+                    <h4>Raft Algorithm</h4>
+                    <p>Three roles: Leader, Follower, Candidate</p>
+
+                    <h5>Leader Election</h5>
+                    <pre><code>// Follower timeout → become Candidate
+if (timeout_since_last_heartbeat > election_timeout) {
+    become_candidate();
+    current_term++;
+    vote_for_self();
+    request_votes_from_peers();
+}
+
+// Majority votes → become Leader
+if (votes_received > num_servers / 2) {
+    become_leader();
+    send_heartbeats_to_all();
+}</code></pre>
+
+                    <h5>Log Replication</h5>
+                    <ol>
+                        <li>Leader receives write request</li>
+                        <li>Leader appends to its log</li>
+                        <li>Leader sends entries to followers</li>
+                        <li>Followers append and acknowledge</li>
+                        <li>Leader commits when majority acks</li>
+                    </ol>
+
+                    <h4>Properties</h4>
+                    <ul>
+                        <li>Strong consistency</li>
+                        <li>Survives (n-1)/2 failures (n=5 → tolerates 2)</li>
+                        <li>No split-brain</li>
+                    </ul>
+                `
+            },
+            {
+                id: 20,
+                title: "Production Deployment",
+                description: "Docker, Kubernetes, monitoring",
+                content: `
+                    <h4>Containerization</h4>
+                    <pre><code># Dockerfile
+FROM ubuntu:22.04
+RUN apt-get update && apt-get install -y cmake g++
+COPY . /app
+WORKDIR /app
+RUN mkdir build && cd build && cmake .. && make
+EXPOSE 8080
+CMD ["./build/metricstream_server"]</code></pre>
+
+                    <h4>Kubernetes Deployment</h4>
+                    <pre><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metricstream
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: metricstream
+  template:
+    metadata:
+      labels:
+        app: metricstream
+    spec:
+      containers:
+      - name: metricstream
+        image: metricstream:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"</code></pre>
+
+                    <h4>Service Mesh (Istio)</h4>
+                    <ul>
+                        <li>Traffic management (canary, blue-green)</li>
+                        <li>Observability (metrics, tracing)</li>
+                        <li>Security (mTLS, authorization)</li>
+                    </ul>
+
+                    <h4>Deployment Strategy</h4>
+                    <ol>
+                        <li>Build Docker image</li>
+                        <li>Push to registry</li>
+                        <li>Rolling update in Kubernetes</li>
+                        <li>Health checks and monitoring</li>
+                        <li>Rollback on errors</li>
+                    </ol>
+                `
+            }
+        ];
+
+        // Generate chapter list
+        function generateChapterList() {
+            const list = document.getElementById('chapter-list');
+            chapters.forEach(chapter => {
+                const li = document.createElement('li');
+                li.className = 'chapter-item';
+                li.innerHTML = `
+                    <div class="chapter-header">
+                        <div>
+                            <strong>Chapter ${chapter.id}:</strong> ${chapter.title}
+                            <span class="expand-icon">▶</span>
+                            <div style="font-size: 13px; color: #7f8c8d; margin-top: 5px;">
+                                ${chapter.description}
+                            </div>
+                        </div>
+                        <input type="checkbox" class="chapter-checkbox" onclick="event.stopPropagation(); updateProgress();">
+                    </div>
+                    <div class="chapter-content">
+                        ${chapter.content}
+                    </div>
+                `;
+                li.onclick = function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        toggleChapter(chapter.id, this);
+                    }
+                };
+                list.appendChild(li);
+            });
+        }
+
         // Tab navigation
         function showTab(tabName) {
-            // Hide all panels
             document.querySelectorAll('.content-panel').forEach(panel => {
                 panel.classList.remove('active');
             });
-
-            // Remove active class from all tabs
             document.querySelectorAll('.nav-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-
-            // Show selected panel
             document.getElementById(tabName).classList.add('active');
-
-            // Add active class to clicked tab
             event.target.classList.add('active');
-
-            // Save to localStorage
             localStorage.setItem('activeTab', tabName);
         }
 
@@ -1200,7 +2473,6 @@ cmake .. && make
             progressBar.style.width = percentage + '%';
             progressBar.textContent = percentage + '%';
 
-            // Update chapter items to show completed state
             checkboxes.forEach((checkbox, index) => {
                 const chapterItem = checkbox.closest('.chapter-item');
                 if (checkbox.checked) {
@@ -1210,54 +2482,50 @@ cmake .. && make
                 }
             });
 
-            // Save progress to localStorage
             const progress = Array.from(checkboxes).map(cb => cb.checked);
             localStorage.setItem('learningProgress', JSON.stringify(progress));
         }
 
         // Chapter toggle
-        function toggleChapter(chapterId) {
-            // Find checkbox within the clicked chapter
-            const checkbox = event.currentTarget.querySelector('.chapter-checkbox');
-            if (checkbox && event.target !== checkbox) {
-                checkbox.checked = !checkbox.checked;
-                updateProgress();
+        function toggleChapter(chapterId, element) {
+            const content = element.querySelector('.chapter-content');
+            const isExpanded = element.classList.contains('expanded');
+
+            // Close all other chapters
+            document.querySelectorAll('.chapter-item').forEach(item => {
+                item.classList.remove('expanded');
+                item.querySelector('.chapter-content').classList.remove('active');
+            });
+
+            // Toggle current chapter
+            if (!isExpanded) {
+                element.classList.add('expanded');
+                content.classList.add('active');
             }
+        }
+
+        // Exercise toggle
+        function toggleExercise(exerciseId) {
+            const exercise = document.getElementById(`exercise-${exerciseId}`);
+            const content = exercise.querySelector('.exercise-content');
+            content.classList.toggle('active');
         }
 
         // Path selection
         let selectedPath = null;
         function selectPath(pathId) {
-            // Remove selected class from all paths
             document.querySelectorAll('.path-card').forEach(card => {
                 card.classList.remove('selected');
             });
-
-            // Add selected class to clicked path
             event.currentTarget.classList.add('selected');
             selectedPath = pathId;
-
-            // Save to localStorage
             localStorage.setItem('selectedPath', pathId);
-        }
-
-        // Phase expansion
-        function expandPhase(phaseId) {
-            alert('Phase ' + phaseId + ' details:\n\nSee the Decision Tree tab for complete details on this phase, including all technical decisions, alternatives considered, and performance impact.');
-        }
-
-        // Exercise details
-        function showExerciseDetails(exerciseId) {
-            alert('Exercise ' + exerciseId + ' starter code and instructions will be available soon!\n\nCheck the repository for exercise files and solutions.');
-        }
-
-        // Show hints
-        function showHints(exerciseId) {
-            alert('Hints for Exercise ' + exerciseId + ':\n\n1. Start by understanding the problem\n2. Review relevant code in the repository\n3. Test incrementally\n4. Measure performance');
         }
 
         // Load saved state on page load
         window.addEventListener('load', () => {
+            generateChapterList();
+
             // Restore active tab
             const savedTab = localStorage.getItem('activeTab');
             if (savedTab) {

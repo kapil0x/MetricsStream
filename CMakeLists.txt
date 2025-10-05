@@ -56,3 +56,12 @@ add_executable(load_test
 target_link_libraries(load_test
     Threads::Threads
 )
+
+# Create persistent connection load test client
+add_executable(load_test_persistent
+    load_test_persistent.cpp
+)
+
+target_link_libraries(load_test_persistent
+    Threads::Threads
+)

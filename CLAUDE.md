@@ -140,3 +140,4 @@ Missing: TLS, real authentication (development focus for now)
 ## Current Focus
 
 Phase 4: Hash-based per-client mutex optimization to eliminate double mutex bottleneck in rate limiting. See TODO(human) in `flush_metrics()` for contribution opportunity.
+- Our goal is to build a  realtime montoting system as well a learning system for engineers to learn how we build the system phase by phase. They should be able to start from the begining and move from phase 0 to final system. They would get opportunity to run labs for each phase/chapters, test it, performance test it.
