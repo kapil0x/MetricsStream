@@ -1,0 +1,255 @@
+================================================================================
+WHERE DOES THE KERNEL QUEUE "DRAIN" TO?
+================================================================================
+
+THE FLOW OF A CONNECTION
+-------------------------
+
+Step 1: CLIENT CONNECTS
+    Client initiates TCP handshake (SYN)
+
+    Location: Network (in flight)
+
+
+Step 2: KERNEL RECEIVES SYN
+    Kernel allocates space in SYN queue (half-open connections)
+    Sends SYN-ACK back to client
+
+    Location: Kernel memory (SYN queue)
+    Memory: ~500 bytes per entry
+
+
+Step 3: HANDSHAKE COMPLETES
+    Client sends ACK
+    Connection moves from SYN queue → ACCEPT queue (listen queue)
+
+    Location: Kernel memory (accept/listen queue) ← THIS IS THE "BACKLOG"
+    Memory: ~1-2KB per entry (connection metadata)
+    Stored: 4-tuple, sequence numbers, TCP state, socket buffer pointers
+
+
+Step 4: APPLICATION CALLS accept()
+    ┌─────────────────────────────────────────────────────────────┐
+    │  THIS IS WHERE "DRAINING" HAPPENS!                         │
+    └─────────────────────────────────────────────────────────────┘
+
+    Before accept():
+        Connection sits in KERNEL SPACE (listen queue)
+        Kernel is responsible for it
+        Takes up kernel memory
+
+    accept() system call:
+        1. Kernel removes connection from listen queue
+        2. Creates a NEW file descriptor for this connection
+        3. Returns file descriptor to application
+
+    After accept():
+        Connection now in APPLICATION SPACE
+        File descriptor points to socket in kernel
+        Application is responsible for it
+        Listen queue slot freed up!
+
+    Location: Application's file descriptor table
+    Memory: File descriptor (#) points to kernel socket structure
+
+
+Step 5: APPLICATION PROCESSES REQUEST
+    Application owns the connection via file descriptor
+    Can read(), write(), close()
+
+    Location: Application has handle; actual socket buffers in kernel
+
+
+WHERE IT GOES - VISUAL
+----------------------
+
+BEFORE accept():
+
+    ┌─────────────────────────────────────────────────┐
+    │           KERNEL SPACE                          │
+    │                                                 │
+    │  Listen Queue (Backlog = 128)                  │
+    │  ┌────┐ ┌────┐ ┌────┐ ┌────┐                  │
+    │  │ C1 │ │ C2 │ │ C3 │ │ C4 │ ... (empty)      │
+    │  └────┘ └────┘ └────┘ └────┘                  │
+    │    ↑      ↑      ↑      ↑                      │
+    │    └──────┴──────┴──────┴─ Waiting for accept()│
+    └─────────────────────────────────────────────────┘
+                        │
+                        │ Connections pile up here!
+                        │ Limited space (backlog)
+                        │
+    ┌─────────────────────────────────────────────────┐
+    │         APPLICATION SPACE                       │
+    │                                                 │
+    │  File Descriptors: (none yet)                  │
+    │                                                 │
+    └─────────────────────────────────────────────────┘
+
+
+AFTER accept() - "DRAINING":
+
+    ┌─────────────────────────────────────────────────┐
+    │           KERNEL SPACE                          │
+    │                                                 │
+    │  Listen Queue (Backlog = 128)                  │
+    │  ┌────┐ ┌────┐                                 │
+    │  │ C3 │ │ C4 │ ... (empty slots freed!)        │
+    │  └────┘ └────┘                                 │
+    │                                                 │
+    │  Active Sockets (owned by app):                │
+    │  [Socket C1] [Socket C2]                       │
+    └─────────────────────────────────────────────────┘
+                        ↑
+                        │ accept() moved them here
+                        │
+    ┌─────────────────────────────────────────────────┐
+    │         APPLICATION SPACE                       │
+    │                                                 │
+    │  File Descriptors:                             │
+    │    fd 5 → Socket C1                            │
+    │    fd 6 → Socket C2                            │
+    │                                                 │
+    │  Application now controls these connections!   │
+    └─────────────────────────────────────────────────┘
+
+
+OLD ARCHITECTURE (SLOW DRAINING)
+---------------------------------
+
+Main thread does EVERYTHING for each connection:
+
+    Time 0ms:  accept() C1     ← Drains 1 from queue
+    Time 1ms:  read(C1)
+    Time 2ms:  parse(C1)
+    Time 3ms:  queue(C1)
+    Time 4ms:  respond(C1)
+    Time 5ms:  close(C1)
+
+    Time 5ms:  accept() C2     ← Drains 1 from queue (5ms later!)
+    Time 6ms:  read(C2)
+    ...
+
+    Meanwhile: C3, C4, C5, C6... pile up in kernel listen queue!
+
+    DRAINING RATE: ~200 connections/second
+    Problem: Queue fills faster than we drain!
+
+
+NEW ARCHITECTURE (FAST DRAINING)
+----------------------------------
+
+Accept loop does ONLY accept(), immediately delegates:
+
+    Thread: Accept Loop
+    ───────────────────────────────────────────────────
+    Time 0.0ms:  accept() C1 → submit to thread pool
+    Time 0.1ms:  accept() C2 → submit to thread pool
+    Time 0.2ms:  accept() C3 → submit to thread pool
+    Time 0.3ms:  accept() C4 → submit to thread pool
+    ...
+
+    DRAINING RATE: ~50,000 connections/second!
+
+    Thread: Worker 1              Thread: Worker 2
+    ─────────────────             ─────────────────
+    read(C1)                      read(C2)
+    parse(C1)                     parse(C2)
+    queue(C1)                     queue(C2)
+    respond(C1)                   respond(C2)
+    close(C1)                     close(C2)
+
+    Processing happens IN PARALLEL
+    Accept loop keeps draining queue FAST
+
+
+WHERE DOES IT "DRAIN TO"? - SUMMARY
+------------------------------------
+
+1. FROM: Kernel's listen queue (limited space, backlog=128)
+   TO:   Application's file descriptor table (much larger capacity)
+
+2. FROM: Kernel responsibility
+   TO:   Application responsibility
+
+3. FROM: Waiting to be accepted
+   TO:   Being actively processed
+
+4. The connection doesn't move in memory - it's always in kernel space
+   What moves is OWNERSHIP and CONTROL
+
+
+THE THREAD POOL QUEUE
+----------------------
+
+But wait - doesn't the thread pool also have a queue?
+
+YES! Here's the full picture:
+
+    Kernel Listen Queue (backlog=128)
+            ↓ accept() - FAST
+    Thread Pool Task Queue (unlimited*)
+            ↓ worker picks up - FAST
+    Worker Thread Processing
+            ↓
+    Done
+
+Key difference:
+- Kernel queue: Fixed size (128), in kernel memory, OS managed
+- Thread pool queue: Dynamic size, in app memory, we control it
+- We can make thread pool queue MUCH larger if needed
+
+
+ANALOGY: RESTAURANT
+-------------------
+
+Kernel Listen Queue = Outside waiting area (limited benches)
+  - People waiting to be seated
+  - Limited capacity (fire code!)
+  - If full, new arrivals turned away
+
+accept() = Host brings people inside
+  - Moves people from outside → inside
+  - "Drains" the waiting area
+
+Thread Pool Queue = Inside holding area
+  - People waiting for a table
+  - More spacious inside
+  - Better experience than standing outside
+
+Worker Thread = Waiter taking order
+  - Serves customer end-to-end
+  - Multiple waiters serve in parallel
+
+
+WHY "DRAINING" MATTERS
+----------------------
+
+If accept() is slow (old architecture):
+  ✗ Kernel queue fills up (128 max)
+  ✗ New connections refused
+  ✗ Clients see "Connection refused"
+  ✗ Bad user experience
+
+If accept() is fast (new architecture):
+  ✓ Kernel queue stays mostly empty
+  ✓ Connections accepted immediately
+  ✓ Moved to thread pool for processing
+  ✓ Good user experience
+
+
+MEASURING THE DRAIN RATE
+-------------------------
+
+You can observe this in real-time:
+
+    # Watch kernel queue depth
+    netstat -an | grep 8080 | grep -c LISTEN
+
+    # Watch file descriptors (accepted connections)
+    lsof -p <pid> | grep -c IPv4
+
+    Old arch: Queue builds up, fd count grows slowly
+    New arch: Queue stays low, fd count grows fast (then shrinks as workers complete)
+
+================================================================================

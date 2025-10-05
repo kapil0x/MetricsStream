@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricStream Learning Hub - Build a Production Metrics Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 60px 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3.5em;
+            font-weight: 300;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header .subtitle {
+            font-size: 1.4em;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        header .tagline {
+            font-size: 1.1em;
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        .phase-nav {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .phase-tab {
+            padding: 15px 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .phase-tab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .phase-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .phase-tab .phase-number {
+            font-size: 1.2em;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .content-panel {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 50px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .content-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 1.8em;
+            color: #34495e;
+            margin: 30px 0 15px 0;
+        }
+
+        h4 {
+            font-size: 1.3em;
+            color: #7f8c8d;
+            margin: 20px 0 10px 0;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e8f4f8 0%, #f0f8ff 100%);
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #fff4e6 0%, #fffaf0 100%);
+            border-left: 4px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #e8f8f5 0%, #f0fff4 100%);
+            border-left: 4px solid #27ae60;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .architecture-diagram pre {
+            font-size: 0.9em;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .code-block pre {
+            margin: 0;
+            white-space: pre;
+            font-family: inherit;
+            color: inherit;
+        }
+
+        .code-block .comment {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        .code-block .keyword {
+            color: #c678dd;
+            font-weight: bold;
+        }
+
+        .code-block .string {
+            color: #98c379;
+        }
+
+        .code-block .function {
+            color: #61afef;
+        }
+
+        .code-block .number {
+            color: #d19a66;
+        }
+
+        .lab-section {
+            background: linear-gradient(135deg, #fef5e7 0%, #fff9f0 100%);
+            border: 2px solid #f39c12;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .lab-section h4 {
+            color: #d68910;
+            margin-top: 0;
+        }
+
+        .command {
+            background: #2c3e50;
+            color: #2ecc71;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            margin: 10px 0;
+            border-left: 4px solid #27ae60;
+        }
+
+        .metrics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .metrics-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .metrics-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .metrics-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .metrics-table tr:hover {
+            background: #e8f4f8;
+        }
+
+        .improvement {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .regression {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        ul, ol {
+            margin: 15px 0 15px 30px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+
+        .badge-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .badge-info {
+            background: #3498db;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .decision-point {
+            background: linear-gradient(135deg, #fef5e7 0%, #fff4e0 100%);
+            border: 2px dashed #f39c12;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+
+        .decision-point h4 {
+            color: #d68910;
+            margin-top: 0;
+        }
+
+        .alternatives {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .alternative {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .alternative:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .alternative.chosen {
+            border-color: #27ae60;
+            background: linear-gradient(135deg, #e8f8f5 0%, #f0fff4 100%);
+        }
+
+        .alternative h5 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+
+        .alternative.chosen h5 {
+            color: #27ae60;
+        }
+
+        .architecture-comparison {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 20px;
+            margin: 30px 0;
+            align-items: center;
+        }
+
+        .arch-before, .arch-after {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .arch-before {
+            border: 2px solid #e74c3c;
+        }
+
+        .arch-after {
+            border: 2px solid #27ae60;
+        }
+
+        .arch-arrow {
+            font-size: 3em;
+            color: #667eea;
+            text-align: center;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .phase-progress {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .solution-section {
+            background: #f8f9fa;
+            border: 2px dashed #95a5a6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .solution-hidden {
+            display: none;
+        }
+
+        .solution-visible {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .show-solution-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+        }
+
+        .show-solution-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .show-solution-btn:active {
+            transform: translateY(0);
+        }
+
+        .hint-section {
+            background: linear-gradient(135deg, #fff9e6 0%, #fffbf0 100%);
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .hint-section h5 {
+            color: #d68910;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 MetricStream Learning Hub</h1>
+            <p class="subtitle">Build a Production Metrics Platform from First Principles</p>
+            <p class="tagline">Learn distributed systems, performance optimization, and systems programming by building real infrastructure</p>
+        </header>
+
+        <div class="phase-nav">
+            <div class="phase-tab active" onclick="showPhase('overview')">
+                <span class="phase-number">📚</span>
+                Overview
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase0')">
+                <span class="phase-number">Phase 0</span>
+                Design
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase1')">
+                <span class="phase-number">Phase 1</span>
+                Threading
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase2')">
+                <span class="phase-number">Phase 2</span>
+                Async I/O
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase3')">
+                <span class="phase-number">Phase 3</span>
+                JSON Parser
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase4')">
+                <span class="phase-number">Phase 4</span>
+                Mutexes
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase5')">
+                <span class="phase-number">Phase 5</span>
+                Profiling
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase6')">
+                <span class="phase-number">Phase 6</span>
+                Thread Pool
+            </div>
+            <div class="phase-tab" onclick="showPhase('phase7')">
+                <span class="phase-number">Phase 7</span>
+                Keep-Alive
+            </div>
+            <div class="phase-tab" onclick="showPhase('future')">
+                <span class="phase-number">🔮</span>
+                Future
+            </div>
+            <div class="phase-tab" onclick="showPhase('decision-tree')">
+                <span class="phase-number">🌳</span>
+                Decisions
+            </div>
+        </div>
+
+        <!-- Overview Panel -->
+        <div class="content-panel active" id="overview">
+            <h2>🎯 Learning Journey Overview</h2>
+
+            <div class="info-box">
+                <h3>What is this?</h3>
+                <p>A hands-on tutorial for building a metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge. No hand-waving—actual implementation with measured results.</p>
+            </div>
+
+            <h3>The Complete System (Phase 0 Design)</h3>
+            <div class="architecture-diagram">
+                <pre>
+<strong>Production MetricStream Architecture</strong>
+
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Monitoring Agents (10K servers)</strong>                            │
+│ • Collect system metrics (CPU, memory, disk, network)           │
+│ • Send metrics to ingestion layer                              │
+└────────────────────┬────────────────────────────────────────────┘
+                     │ HTTP/JSON
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Ingestion Service</strong> (Phase 1-7: ✅ COMPLETE)                │
+│ • HTTP server from raw sockets                                 │
+│ • Thread pool, rate limiting, validation                       │
+│ • Measured: 2,253 RPS, 100% success rate                       │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Message Queue</strong> (Phase 8: Planned)                          │
+│ • Kafka or similar for buffering                               │
+│ • Partitioning by client_id                                    │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Stream Processing</strong> (Phase 9: Planned)                      │
+│ • Time-window aggregations                                     │
+│ • Anomaly detection                                            │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Storage Layer</strong> (Phase 10: Planned)                         │
+│ • Time-series database                                         │
+│ • Retention policies                                           │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ <strong>Visualization</strong> (Phase 11: Planned)                         │
+│ • Dashboards and alerting                                      │
+└─────────────────────────────────────────────────────────────────┘
+                </pre>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ What You'll Build</h4>
+                <ul>
+                    <li>HTTP server from raw sockets (no frameworks)</li>
+                    <li>Custom JSON parser (O(n²) → O(n) optimization)</li>
+                    <li>Thread pool for handling concurrent requests</li>
+                    <li>Lock-free ring buffer using atomics</li>
+                    <li>Rate limiting with per-client tracking</li>
+                    <li>Producer-consumer pattern for async I/O</li>
+                </ul>
+                <p style="margin-top: 15px;"><strong>Current status:</strong> Phase 1-7 complete (2,253 RPS, 100% success rate). Kafka/Flink integration planned for future phases.</p>
+            </div>
+
+            <h3>Current Progress</h3>
+            <div class="phase-progress">
+                <strong>Phase 1-7 Complete: Ingestion Service</strong>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 35%;">Phase 1-7 of 11 Complete</div>
+                </div>
+                <p style="margin-top: 10px; color: #7f8c8d;">
+                    ✅ Built: HTTP ingestion (2,253 RPS measured)<br>
+                    ⏳ Next: Message queue integration<br>
+                    🔮 Future: Stream processing, storage, visualization
+                </p>
+            </div>
+
+            <h3>Performance Journey: Phase 0 → Phase 7</h3>
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Optimization</th>
+                        <th>Success Rate</th>
+                        <th>Latency</th>
+                        <th>Bottleneck Eliminated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Phase 0</strong></td>
+                        <td>Baseline (sequential)</td>
+                        <td>~50%</td>
+                        <td>-</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 1</strong></td>
+                        <td>Thread-per-request</td>
+                        <td><span class="improvement">88%</span></td>
+                        <td>-</td>
+                        <td>Sequential execution</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 2</strong></td>
+                        <td>Async I/O</td>
+                        <td><span class="improvement">86%</span></td>
+                        <td>-</td>
+                        <td>Blocking file writes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 3</strong></td>
+                        <td>JSON parser O(n²)→O(n)</td>
+                        <td><span class="improvement">80.2%</span></td>
+                        <td>2.73ms</td>
+                        <td>CPU-bound parsing</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 4</strong></td>
+                        <td>Hash-based mutexes</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Global lock contention</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 5</strong></td>
+                        <td>Lock-free ring buffer</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Metrics collection overhead</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 6</strong></td>
+                        <td>Thread pool</td>
+                        <td>51%</td>
+                        <td>2.05ms</td>
+                        <td>Thread creation (500μs)</td>
+                    </tr>
+                    <tr style="background: #e8f8f5;">
+                        <td><strong>Phase 7</strong></td>
+                        <td>Keep-Alive + Backlog</td>
+                        <td><span class="improvement">100%</span></td>
+                        <td><span class="improvement">0.25ms</span></td>
+                        <td>Kernel accept queue</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h4>⚠️ Key Learning: Measure Before Optimizing</h4>
+                <p>Notice Phase 6 showed <em>worse</em> success rate (51%) despite eliminating 96% of thread creation overhead. Why? The real bottleneck was the kernel's listen backlog (10 → 1024 in Phase 7). <strong>Always profile the entire system, not just application code.</strong></p>
+            </div>
+
+            <h3>How to Use This</h3>
+            <ol>
+                <li>Start with Phase 0 to understand the overall system design</li>
+                <li>Work through each phase in order—they build on each other</li>
+                <li>Implement the TODO(student) sections yourself before checking solutions</li>
+                <li>Run the load tests and compare your results to the expected numbers</li>
+                <li>Check the decision tree to see why alternatives were rejected</li>
+            </ol>
+        </div>
+
+        <!-- Phase 0: System Design -->
+        <div class="content-panel" id="phase0">
+            <h2>Phase 0: System Design Foundations</h2>
+
+            <div class="info-box">
+                <h3>🎯 What You'll Build</h3>
+                <p>Design a complete real-time monitoring system before writing any code. This phase teaches you to think like a system architect: define requirements, design data flow, choose technologies, and calculate capacity.</p>
+            </div>
+
+            <h3>Step 1: Define Requirements & Constraints</h3>
+
+            <div class="decision-point">
+                <h4>Functional Requirements</h4>
+                <ul>
+                    <li><strong>Monitor 10,000 servers</strong> continuously across multiple data centers</li>
+                    <li><strong>Collect metrics every 10 seconds</strong> (10 metrics per server = 100K metrics/sec)</li>
+                    <li><strong>Store raw metrics for 30 days</strong>, aggregated metrics for 1+ years</li>
+                    <li><strong>Real-time dashboards</strong> with <1 second end-to-end latency</li>
+                    <li><strong>Alerts on threshold violations</strong> (e.g., CPU > 80%, disk > 90%)</li>
+                    <li><strong>Historical analysis</strong> - query data from last week, month, year</li>
+                </ul>
+
+                <h4>Non-Functional Requirements</h4>
+                <ul>
+                    <li><strong>Throughput:</strong> 100K metrics/sec sustained (peak: 200K with bursts)</li>
+                    <li><strong>Availability:</strong> 99.9% uptime (8.76 hours downtime/year allowed)</li>
+                    <li><strong>Latency:</strong> Metrics visible in dashboard within 1 second of collection</li>
+                    <li><strong>Scalability:</strong> Should scale to 100K servers without architecture changes</li>
+                    <li><strong>Data Retention:</strong> 30 days raw (all data), 1 year 1-min aggregates, 5 years 1-hour aggregates</li>
+                </ul>
+
+                <h4>System Constraints</h4>
+                <ul>
+                    <li><strong>Budget:</strong> Cost-effective compared to SaaS solutions (Datadog, New Relic)</li>
+                    <li><strong>Network:</strong> Agents may be behind NAT/firewalls (push model preferred)</li>
+                    <li><strong>Storage:</strong> Optimize for time-series data, use compression</li>
+                    <li><strong>Operations:</strong> System should be maintainable by small team (2-3 engineers)</li>
+                </ul>
+            </div>
+
+            <h3>Step 2: High-Level System Architecture</h3>
+
+            <div style="background: #2a2a2a; border-radius: 12px; padding: 30px; margin: 20px 0;">
+
+                <!-- Layer 1: Monitoring Agents -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #667eea; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">1</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">MONITORING AGENTS</h4>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: #fff; font-size: 0.9em;">10,000 servers</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">Server 1</div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">Server 2</div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">Server 3</div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">... 10K</div>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        <strong>Collect every 10 seconds:</strong><br>
+                        • CPU usage, memory, disk I/O<br>
+                        • Network traffic, process count<br>
+                        • Custom application metrics
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+                <div style="text-align: center; color: #95a5a6; font-size: 0.95em; margin-bottom: 15px;">
+                    <strong>HTTP POST (JSON)</strong><br>
+                    10 metrics/server × 10K servers = <span style="color: #3498db; font-weight: bold;">100K metrics/sec</span>
+                </div>
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+
+                <!-- Layer 2: Ingestion Service (IMPLEMENTED) -->
+                <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border-radius: 10px; padding: 20px; margin-bottom: 15px; box-shadow: 0 0 20px rgba(39,174,96,0.3);">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #27ae60; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">2</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">INGESTION SERVICE</h4>
+                        <span style="margin-left: auto; background: #fff; padding: 5px 12px; border-radius: 20px; color: #27ae60; font-weight: bold; font-size: 0.9em;">✅ Phase 1-7 Complete</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 12px; color: #fff; text-align: center;">
+                        <strong>Load Balancer</strong> (Round-robin)
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px;">
+                        <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 5px; color: #fff; font-size: 0.85em;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">Server 1</div>
+                            <div style="color: #f1c40f;">2,253 RPS</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 5px; color: #fff; font-size: 0.85em;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">Server 2</div>
+                            <div style="color: #f1c40f;">2,253 RPS</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 12px; border-radius: 5px; color: #fff; font-size: 0.85em;">
+                            <div style="font-weight: bold; margin-bottom: 5px;">... Server 20</div>
+                            <div style="color: #f1c40f;">2,253 RPS</div>
+                        </div>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        <strong>Features:</strong> HTTP server, rate limiting, JSON parsing, thread pool, async I/O<br>
+                        <strong>Performance:</strong> <span style="color: #f1c40f; font-weight: bold;">2,253 RPS per server @ 100% success</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+                <div style="text-align: center; color: #95a5a6; font-size: 0.95em; margin-bottom: 15px;">Forward to message queue</div>
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+
+                <!-- Layer 3: Message Queue -->
+                <div style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); border-radius: 10px; padding: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #e67e22; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">3</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">MESSAGE QUEUE</h4>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: #fff; font-size: 0.9em;">Phase 8: Planned</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 12px; color: #fff;">
+                        <strong style="font-size: 1.05em;">Apache Kafka</strong><br>
+                        <span style="font-size: 0.9em; color: rgba(255,255,255,0.9);">3 brokers, 12 partitions</span>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        • Partitioning: Hash(client_id) for load distribution<br>
+                        • Retention: 7 days for replay capability<br>
+                        • Decouples ingestion from processing<br>
+                        • Acts as buffer during processing failures
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+
+                <!-- Layer 4: Stream Processing -->
+                <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius: 10px; padding: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #3498db; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">4</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">STREAM PROCESSING</h4>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: #fff; font-size: 0.9em;">Phase 9: Planned</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 12px; color: #fff;">
+                        <strong style="font-size: 1.05em;">Apache Flink</strong><br>
+                        <span style="font-size: 0.9em; color: rgba(255,255,255,0.9);">12 workers</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px;">
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">
+                            <strong>1-min windows</strong><br>avg, p95, p99
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">
+                            <strong>Anomaly detect</strong><br>CPU spike >80%
+                        </div>
+                        <div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 5px; text-align: center; color: #fff; font-size: 0.85em;">
+                            <strong>Aggregations</strong><br>by host, type
+                        </div>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        <strong>Outputs:</strong><br>
+                        • Raw metrics → Storage (all data points)<br>
+                        • Aggregated metrics → Storage (1-min summaries)<br>
+                        • Alerts → Notification service (threshold violations)
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+
+                <!-- Layer 5: Storage -->
+                <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); border-radius: 10px; padding: 20px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #9b59b6; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">5</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">TIME-SERIES STORAGE</h4>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: #fff; font-size: 0.9em;">Phase 10: Planned</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 12px; color: #fff;">
+                        <strong style="font-size: 1.05em;">InfluxDB Cluster</strong><br>
+                        <span style="font-size: 0.9em; color: rgba(255,255,255,0.9);">3 nodes</span>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        <strong>Retention policies:</strong><br>
+                        • Raw data: 30 days (100K writes/sec)<br>
+                        • 1-min aggregates: 1 year (1.6K writes/sec)<br>
+                        • 1-hour aggregates: 5 years (27 writes/sec)<br><br>
+                        <strong>Why InfluxDB?</strong> Time-series optimized, 10:1 compression, built-in downsampling
+                    </div>
+                </div>
+
+                <div style="text-align: center; color: #3498db; font-size: 1.8em; margin: 15px 0;">↓</div>
+
+                <!-- Layer 6: Visualization -->
+                <div style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-radius: 10px; padding: 20px;">
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <div style="background: #fff; color: #e74c3c; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2em; margin-right: 15px;">6</div>
+                        <h4 style="color: #fff; margin: 0; font-size: 1.2em;">VISUALIZATION & ALERTING</h4>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: #fff; font-size: 0.9em;">Phase 11: Planned</span>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 15px; margin-bottom: 12px; color: #fff;">
+                        <strong style="font-size: 1.05em;">Grafana Dashboards + Alert Manager</strong>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.6;">
+                        • Real-time charts (last 1 hour, 1 day, 1 week)<br>
+                        • Custom dashboards per team/service<br>
+                        • Alert rules with PagerDuty/Slack integration<br>
+                        • Threshold violations (CPU > 80% for 5 min)<br>
+                        • Anomaly detection & alert aggregation
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div style="margin-top: 30px; background: #1e1e1e; border-left: 4px solid #3498db; padding: 20px; border-radius: 5px;">
+                    <div style="color: #3498db; font-weight: bold; font-size: 1.1em; margin-bottom: 10px;">📊 Data Flow Summary</div>
+                    <div style="color: #95a5a6; font-size: 1em; font-family: monospace; line-height: 1.8;">
+                        Agents → Ingestion → Kafka → Flink → InfluxDB → Grafana<br>
+                        <span style="color: #27ae60; font-weight: bold;">         ↑ We are here (Phase 1-7 complete)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 20px;">
+                <h4>🎓 Design Principles</h4>
+                <ul>
+                    <li><strong>Decouple components:</strong> Message queue separates ingestion from processing—if Flink crashes, Kafka buffers data</li>
+                    <li><strong>Horizontal scaling:</strong> Each layer scales independently (add more ingestion servers, Flink workers, etc.)</li>
+                    <li><strong>Data retention tiers:</strong> Store raw data short-term, aggregates long-term (saves storage cost)</li>
+                    <li><strong>Push model:</strong> Agents push metrics (simpler than pull, works behind NAT/firewalls)</li>
+                </ul>
+            </div>
+
+            <h3>Step 3: Capacity Planning from Measured Results</h3>
+
+            <div class="toggle-container" style="margin: 20px 0;">
+                <button class="show-solution-btn" onclick="toggleArchitecture('phase0')" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                    📊 Show Capacity Calculation Flow
+                </button>
+            </div>
+
+            <div id="phase0-before" class="architecture-flow active">
+                <div class="command">$ ./build/load_test_persistent 8080 100 100 5000
+Success Rate: 100.00%
+Throughput: 2,253 RPS
+Avg Latency: 0.25ms
+Resource Usage: 45% CPU, 150MB memory</div>
+            </div>
+
+            <div id="phase0-after" class="architecture-flow" style="display: none;">
+                <h4 style="color: #9b59b6; text-align: center; font-size: 1.3em; margin-bottom: 20px;">📊 Capacity Calculation Flow</h4>
+                <div style="background: #2a2a2a; border-radius: 10px; padding: 25px; border: 2px solid #9b59b6;">
+
+                    <div style="background: #1e1e1e; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #3498db; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #3498db; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">1</span>
+                            Measure Current Performance
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">
+                            <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px;">2,253 RPS @ 45% CPU, 150MB memory</code>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; color: #9b59b6; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #e67e22; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #e67e22; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #e67e22; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">2</span>
+                            Calculate CPU Headroom
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">
+                            Current: 2,253 RPS @ 45% CPU<br>
+                            Projected @ 90%: 2,253 × (90 / 45) = <strong style="color: #e67e22;">~5,000 RPS</strong>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; color: #9b59b6; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #1abc9c; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #1abc9c; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #1abc9c; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">3</span>
+                            Verify Memory Capacity
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">
+                            Per-connection: 150MB / 500 connections = 0.3MB<br>
+                            Max (4GB server): (4GB - 1GB OS) / 0.3MB = <strong style="color: #1abc9c;">~10,000 connections</strong><br>
+                            <span style="color: #7f8c8d; font-size: 0.85em;">✅ Memory is NOT the bottleneck (CPU limits us first)</span>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; color: #9b59b6; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #27ae60; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #27ae60; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #27ae60; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">4</span>
+                            Calculate Horizontal Scaling
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">
+                            Target: 100K metrics/sec<br>
+                            Per-server capacity: 5K RPS<br>
+                            Servers needed: 100K / 5K = <strong style="color: #27ae60;">20 servers</strong>
+                        </div>
+                    </div>
+
+                    <div style="background: #1f3a1f; border-left: 4px solid #27ae60; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                        <div style="color: #27ae60; font-weight: bold; margin-bottom: 8px;">✅ Capacity Plan:</div>
+                        <div style="color: #95a5a6;">
+                            • Single server: 5,000 RPS (CPU-bound @ 90%)<br>
+                            • For 100K RPS: 20 servers behind load balancer<br>
+                            • Room for 2x traffic spike without scaling
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lab-section">
+                <h4>🔬 Lab 0: Design Exercise</h4>
+                <p><strong>Task:</strong> Design your message queue selection process</p>
+
+                <ol>
+                    <li>Compare Kafka vs RabbitMQ for 100K msg/sec throughput</li>
+                    <li>Research actual benchmark numbers (not vendor claims)</li>
+                    <li>Document trade-offs in a decision matrix</li>
+                </ol>
+
+                <h5>Expected Outcome</h5>
+                <div class="success-box">
+                    <p>A simple comparison table with:</p>
+                    <ul>
+                        <li>Measured throughput numbers</li>
+                        <li>Operational complexity assessment</li>
+                        <li>Your justified recommendation</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- We'll add Phase 1-7 content here in the next section -->
+        <div class="content-panel" id="phase1">
+            <h2>Phase 1: Thread-Per-Request Model</h2>
+            <p style="font-size: 1.2em; color: #7f8c8d; margin-bottom: 30px;">
+                <strong>Problem:</strong> Sequential request processing limits throughput to ~200 RPS<br>
+                <strong>Solution:</strong> Spawn new thread for each incoming request<br>
+                <strong>Result:</strong> 20 clients: 81% → 88% success rate
+            </p>
+
+            <div class="info-box">
+                <h4>🎯 Learning Objectives</h4>
+                <ul>
+                    <li>Understand the difference between sequential and parallel request processing</li>
+                    <li>Implement thread-per-request model using std::thread</li>
+                    <li>Learn about thread detachment and lambda captures</li>
+                    <li>Measure performance improvements with load testing</li>
+                    <li>Identify when simple parallelism starts to break down</li>
+                </ul>
+            </div>
+
+            <h3>Architecture Evolution</h3>
+
+            <div class="toggle-container" style="margin: 20px 0;">
+                <button class="show-solution-btn" onclick="toggleArchitecture('phase1')" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                    🔄 Toggle: Before ↔ After
+                </button>
+            </div>
+
+            <div id="phase1-before" class="architecture-flow active">
+                <h4 style="color: #e74c3c; text-align: center; font-size: 1.3em; margin-bottom: 20px;">❌ Before: Sequential Processing</h4>
+                <div style="background: #2a2a2a; border-radius: 10px; padding: 25px; border: 2px solid #e74c3c;">
+                    <div style="background: #1e1e1e; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #3498db; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #3498db; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">1</span>
+                            accept() - Wait for client connection
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">Server blocks here until client arrives</div>
+                    </div>
+
+                    <div style="text-align: center; color: #e74c3c; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #3498db; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #3498db; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">2</span>
+                            HTTP parse (BLOCKING)
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">Parse request headers and body - all other clients wait</div>
+                    </div>
+
+                    <div style="text-align: center; color: #e74c3c; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #3498db; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #3498db; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">3</span>
+                            File write (BLOCKING)
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">Write to disk - slowest operation, blocks everything</div>
+                    </div>
+
+                    <div style="text-align: center; color: #e74c3c; font-size: 1.5em; margin: 10px 0;">↓</div>
+
+                    <div style="background: #1e1e1e; border: 2px solid #27ae60; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #27ae60; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #27ae60; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">4</span>
+                            Response sent
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">Finally! Now we can accept the next client</div>
+                    </div>
+
+                    <div style="background: #3a1f1f; border-left: 4px solid #e74c3c; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                        <div style="color: #e74c3c; font-weight: bold; margin-bottom: 8px;">⚠️ The Problem:</div>
+                        <div style="color: #95a5a6;">
+                            • Head-of-line blocking: One slow request blocks all others<br>
+                            • While processing Request A, Requests B, C, D wait in the kernel queue<br>
+                            • Max throughput: ~200 RPS (limited by sequential execution)<br>
+                            • Measured: 81% success rate @ 20 clients
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="phase1-after" class="architecture-flow" style="display: none;">
+                <h4 style="color: #27ae60; text-align: center; font-size: 1.3em; margin-bottom: 20px;">✅ After: Thread-Per-Request</h4>
+                <div style="background: #2a2a2a; border-radius: 10px; padding: 25px; border: 2px solid #27ae60;">
+                    <div style="background: #1e1e1e; border: 2px solid #3498db; border-radius: 8px; padding: 15px; margin: 10px 0;">
+                        <div style="color: #3498db; font-weight: bold; margin-bottom: 8px;">
+                            <span style="display: inline-block; background: #3498db; color: #fff; width: 25px; height: 25px; border-radius: 50%; text-align: center; line-height: 25px; margin-right: 8px;">1</span>
+                            accept() - Immediately spawn thread
+                        </div>
+                        <div style="color: #95a5a6; font-size: 0.9em;">
+                            <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px;">std::thread([this, client_socket]{ ... }).detach();</code>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 20px 0;">
+                        <div style="background: #1f2a1f; border: 2px solid #27ae60; border-radius: 8px; padding: 12px;">
+                            <div style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Thread 1</div>
+                            <div style="color: #7f8c8d; font-size: 0.8em;">
+                                Parse → Process → Write → Respond
+                            </div>
+                        </div>
+                        <div style="background: #1f2a1f; border: 2px solid #27ae60; border-radius: 8px; padding: 12px;">
+                            <div style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Thread 2</div>
+                            <div style="color: #7f8c8d; font-size: 0.8em;">
+                                Parse → Process → Write → Respond
+                            </div>
+                        </div>
+                        <div style="background: #1f2a1f; border: 2px solid #27ae60; border-radius: 8px; padding: 12px;">
+                            <div style="color: #27ae60; font-weight: bold; font-size: 0.9em; margin-bottom: 5px;">Thread 3</div>
+                            <div style="color: #7f8c8d; font-size: 0.8em;">
+                                Parse → Process → Write → Respond
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: #1f3a1f; border-left: 4px solid #27ae60; padding: 15px; margin-top: 20px; border-radius: 5px;">
+                        <div style="color: #27ae60; font-weight: bold; margin-bottom: 8px;">✅ The Solution:</div>
+                        <div style="color: #95a5a6;">
+                            • Parallel execution: Multiple requests processed simultaneously<br>
+                            • Main thread immediately returns to accept() after spawning worker<br>
+                            • Each request gets its own thread with independent execution<br>
+                            • Measured: 88% success rate @ 20 clients (+7% improvement)
+                        </div>
+                    </div>
+
+                    <div style="background: #3a2a1f; border-left: 4px solid #f39c12; padding: 15px; margin-top: 15px; border-radius: 5px;">
+                        <div style="color: #f39c12; font-weight: bold; margin-bottom: 8px;">⚡ Next Bottleneck Discovered:</div>
+                        <div style="color: #95a5a6;">
+                            File I/O is now the bottleneck - all threads compete for the file write mutex. This leads us to Phase 2: Async I/O.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box" style="margin-top: 20px;">
+                <h5>🎨 Additional Learning Resources</h5>
+                <p><strong>Interactive Visualizations:</strong></p>
+                <ul>
+                    <li><a href="learning-resources/visualizations/request_flow_visual.html" target="_blank" style="color: #3498db; font-weight: bold;">Request Flow Visualization</a> - Phase 6 & 7 (Thread Pool + HTTP Keep-Alive)</li>
+                    <li><a href="learning-resources/visualizations/event_driven_architecture.html" target="_blank" style="color: #3498db; font-weight: bold;">Event-Driven Architecture</a> - Compare with thread-based model</li>
+                </ul>
+                <p><strong>Deep Dive Concepts:</strong></p>
+                <ul>
+                    <li><a href="learning-resources/concepts/connection_explained.txt" target="_blank" style="color: #3498db;">TCP Connection Mechanics</a> - Listen backlog & kernel queues</li>
+                    <li><a href="learning-resources/concepts/queue_drain_explained.txt" target="_blank" style="color: #3498db;">Queue Draining Behavior</a> - Producer-consumer patterns</li>
+                </ul>
+            </div>
+
+            <h3>📚 Background: Understanding Threading</h3>
+            <div class="info-box">
+                <h4>What is a Thread?</h4>
+                <p>A thread is the smallest unit of execution within a process. Multiple threads share the same memory space but execute independently.</p>
+
+                <h5>Key Concepts:</h5>
+                <ul>
+                    <li><strong>std::thread:</strong> C++11 thread class for creating new threads</li>
+                    <li><strong>Lambda capture:</strong> [this, client_socket] captures variables for thread use</li>
+                    <li><strong>detach():</strong> Allows thread to run independently from parent</li>
+                    <li><strong>join():</strong> Waits for thread to complete (alternative to detach)</li>
+                </ul>
+
+                <h5>Why detach() instead of join()?</h5>
+                <p>join() would block the accept loop until the request completes, defeating the purpose of threading. detach() allows the thread to run independently while we continue accepting new connections.</p>
+            </div>
+
+            <h3>🛠️ Hands-On Exercise</h3>
+            <div class="lab-section">
+                <h4>💻 Exercise 1.1: Implement Thread-Per-Request (25 minutes)</h4>
+
+                <div class="warning-box">
+                    <h5>⚠️ Before You Start</h5>
+                    <p><strong>Prerequisite:</strong> You should have completed Phase 0 and understand the sequential baseline implementation.</p>
+                    <p><strong>What you'll build:</strong> Transform the sequential HTTP server into a threaded version by implementing the TODO markers below.</p>
+                </div>
+
+                <h5>Step 1: Setup Your Workspace</h5>
+                <div class="command">$ cd /path/to/metricstream
+$ git checkout phase0-baseline    # Start from sequential version
+$ git checkout -b my-phase1       # Create your working branch</div>
+
+                <h5>Step 2: Locate the File</h5>
+                <p>Open <code>src/http_server.cpp</code> and find the <code>start()</code> method around line 60.</p>
+
+                <h5>Step 3: Understand the Starter Code</h5>
+                <div class="code-block"><pre><span class="comment">// src/http_server.cpp - Current SEQUENTIAL implementation</span>
+
+<span class="keyword">void</span> HttpServer::<span class="function">start</span>() {
+    <span class="comment">// ... socket setup code above ...</span>
+
+    <span class="keyword">while</span> (running_.load()) {
+        <span class="comment">// Accept incoming connection</span>
+        <span class="keyword">struct</span> sockaddr_in client_addr;
+        socklen_t client_len = <span class="keyword">sizeof</span>(client_addr);
+
+        <span class="keyword">int</span> client_socket = <span class="function">accept</span>(server_fd,
+            (<span class="keyword">struct</span> sockaddr*)&client_addr, &client_len);
+
+        <span class="keyword">if</span> (client_socket < 0) {
+            <span class="keyword">continue</span>;  <span class="comment">// Error handling</span>
+        }
+
+        <span class="comment">// PHASE 0: Sequential processing - blocking!</span>
+        <span class="comment">// This processes ONE request at a time</span>
+        <span class="function">handle_client_request</span>(client_socket);
+        <span class="function">close</span>(client_socket);
+    }
+}</pre></div>
+
+                <h5>Step 4: Your Task - Implement Threading</h5>
+                <p><strong>Goal:</strong> Replace the sequential call with a new thread for each request.</p>
+
+                <div class="code-block"><pre>
+<span class="comment">// TODO(student): Transform this into thread-per-request model
+//
+// Your task:
+// 1. Create a new std::thread for each accepted connection
+// 2. Move the handle_client_request() call into the thread
+// 3. Capture 'this' and 'client_socket' in the lambda
+// 4. Close the socket INSIDE the thread (not outside)
+// 5. Detach the thread to allow independent execution
+//
+// Hints:
+// - Use lambda syntax: [capture](params) { body }
+// - Remember to #include <thread> at the top of the file
+// - The thread should own the socket (move it into lambda)
+//</span>
+
+<span class="keyword">while</span> (running_.load()) {
+    <span class="keyword">int</span> client_socket = <span class="function">accept</span>(server_fd, ...);
+
+    <span class="keyword">if</span> (client_socket < 0) {
+        <span class="keyword">continue</span>;
+    }
+
+    <span class="comment">// TODO(student): Replace this line with thread creation ↓</span>
+    <span class="function">handle_client_request</span>(client_socket);
+    <span class="function">close</span>(client_socket);
+    <span class="comment">// TODO(student): End of code to replace ↑</span>
+}
+                </pre></div>
+
+                <h5>Step 5: Try It Yourself First!</h5>
+                <div class="warning-box">
+                    <p><strong>⚠️ Challenge Mode:</strong> Try implementing the solution yourself before looking at hints or solutions. You learn best by struggling with the problem first!</p>
+                </div>
+
+                <div class="hint-section">
+                    <h5>💡 Hints (if you're stuck):</h5>
+                    <ul>
+                        <li>You need to use <code>std::thread</code> from the <code>&lt;thread&gt;</code> header</li>
+                        <li>Lambda syntax: <code>[capture](params) { body }</code></li>
+                        <li>Capture both <code>this</code> and <code>client_socket</code></li>
+                        <li>Call <code>.detach()</code> on the thread to let it run independently</li>
+                        <li>Move both <code>handle_client_request()</code> and <code>close()</code> inside the lambda</li>
+                    </ul>
+                </div>
+
+                <button class="show-solution-btn" onclick="toggleSolution('solution-1-1')">
+                    💡 Show Solution (try yourself first!)
+                </button>
+
+                <div id="solution-1-1" class="solution-section solution-hidden">
+                    <h4>✅ Solution</h4>
+
+                    <p><strong>Option A: Basic Thread Creation (Recommended)</strong></p>
+                    <div class="code-block"><pre>
+<span class="comment">// Simple approach - thread takes ownership</span>
+std::<span class="function">thread</span>([<span class="keyword">this</span>, client_socket]() {
+    <span class="function">handle_client_request</span>(client_socket);
+    <span class="function">close</span>(client_socket);
+}).<span class="function">detach</span>();
+                    </pre></div>
+
+                    <p><strong>Option B: Inline Request Handling (More Educational)</strong></p>
+                    <div class="code-block"><pre>
+<span class="comment">// Expanded version - handle request inline</span>
+std::<span class="function">thread</span>([<span class="keyword">this</span>, client_socket]() {
+    <span class="keyword">char</span> buffer[4096] = {0};
+    ssize_t bytes_read = <span class="function">read</span>(client_socket, buffer, <span class="keyword">sizeof</span>(buffer) - 1);
+
+    <span class="keyword">if</span> (bytes_read > 0) {
+        std::string request_data(buffer, bytes_read);
+        HttpRequest request = <span class="function">parse_request</span>(request_data);
+        HttpResponse response = <span class="function">handle_request</span>(request);
+
+        std::string response_str = <span class="function">format_response</span>(response);
+        <span class="function">write</span>(client_socket, response_str.c_str(), response_str.length());
+    }
+
+    <span class="function">close</span>(client_socket);
+}).<span class="function">detach</span>();
+                    </pre></div>
+
+                    <p><strong>Explanation:</strong></p>
+                    <ul>
+                        <li><code>[this, client_socket]</code> - Captures the server instance and socket for use in lambda</li>
+                        <li><code>std::thread(...)</code> - Creates new thread with lambda as entry point</li>
+                        <li><code>.detach()</code> - Allows thread to run independently; parent doesn't wait</li>
+                        <li>Option A reuses existing <code>handle_client_request()</code> function</li>
+                        <li>Option B expands the logic inline for more control</li>
+                    </ul>
+
+                    <p><strong>Which should you choose?</strong> Start with Option A (simpler). Once working, refactor to Option B to understand the full request flow.</p>
+                </div>
+
+                <h5>Step 6: Don't Forget the Include!</h5>
+                <div class="code-block"><pre>
+<span class="comment">// Add at the top of src/http_server.cpp</span>
+<span class="keyword">#include</span> <span class="string">&lt;thread&gt;</span>
+                </pre></div>
+
+                <h5>Step 7: Build and Test</h5>
+                <div class="command">$ cd build
+$ cmake .. && make metricstream_server
+
+# Run the server
+$ ./metricstream_server
+Starting MetricStream server on port 8080</div>
+
+                <h5>Step 8: Verify with curl (Single Request)</h5>
+                <div class="command">$ curl -X POST http://localhost:8080/metrics \
+  -H "Content-Type: application/json" \
+  -d '{"timestamp":"2025-01-01T12:00:00Z","name":"cpu_usage","value":75.5}'
+
+# Expected output:
+{"status":"success","message":"Metric received"}</div>
+
+                <h5>Step 9: Load Test (Multiple Concurrent Requests)</h5>
+                <div class="command">$ ./build/load_test 8080 20 10
+
+# Expected output:
+Testing with 20 clients, 10 requests each (200 total requests)...
+Success Rate: 85-90%
+Avg Latency: 0.8-1.5ms
+Total Requests: 200
+Successful: 170-180</div>
+
+                <div class="success-box">
+                    <h5>✅ Success Criteria</h5>
+                    <ul>
+                        <li>Server compiles without errors</li>
+                        <li>Single curl request returns success</li>
+                        <li>Load test shows <strong>80%+ success rate</strong> (vs ~50% sequential)</li>
+                        <li>Metrics are written to <code>metrics.jsonl</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="lab-section">
+                <h4>💻 Exercise 1.2: Measure Thread Overhead (15 minutes)</h4>
+
+                <p><strong>Goal:</strong> Understand when thread-per-request starts to break down.</p>
+
+                <h5>Test Different Client Counts</h5>
+                <div class="command"># Light load (should be near 100%)
+$ ./build/load_test 8080 10 10
+Success Rate: ?
+
+# Medium load (target: 85-90%)
+$ ./build/load_test 8080 20 10
+Success Rate: ?
+
+# Heavy load (performance degrades)
+$ ./build/load_test 8080 50 10
+Success Rate: ?
+
+# Extreme load (system limits hit)
+$ ./build/load_test 8080 100 10
+Success Rate: ?</div>
+
+                <h5>Record Your Results</h5>
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Clients</th>
+                            <th>Requests/Client</th>
+                            <th>Your Success Rate</th>
+                            <th>Expected Range</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>10</td>
+                            <td>10</td>
+                            <td><input type="text" style="width: 80px; padding: 5px;" placeholder="??%"></td>
+                            <td>95-100%</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td>10</td>
+                            <td><input type="text" style="width: 80px; padding: 5px;" placeholder="??%"></td>
+                            <td>85-90%</td>
+                        </tr>
+                        <tr>
+                            <td>50</td>
+                            <td>10</td>
+                            <td><input type="text" style="width: 80px; padding: 5px;" placeholder="??%"></td>
+                            <td>60-70%</td>
+                        </tr>
+                        <tr>
+                            <td>100</td>
+                            <td>10</td>
+                            <td><input type="text" style="width: 80px; padding: 5px;" placeholder="??%"></td>
+                            <td>40-50%</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning-box">
+                    <h5>🤔 Reflection Questions</h5>
+                    <ol>
+                        <li>Why does success rate drop at higher client counts?</li>
+                        <li>What system resource becomes the bottleneck?</li>
+                        <li>How much overhead does thread creation add per request?</li>
+                    </ol>
+                    <p><strong>Hint:</strong> Each thread creation takes ~500μs, but actual request processing is only ~5μs. That's 100x overhead!</p>
+                </div>
+            </div>
+
+            <div class="lab-section">
+                <h4>💻 Exercise 1.3: Thread Safety Bug Hunt (Optional, 20 minutes)</h4>
+
+                <p><strong>Challenge:</strong> Find and fix a thread safety issue in the metrics counter.</p>
+
+                <div class="code-block"><pre>
+<span class="comment">// include/http_server.h - Thread-unsafe counter!</span>
+
+<span class="keyword">class</span> HttpServer {
+<span class="keyword">private</span>:
+    <span class="keyword">int</span> total_requests_ = 0;  <span class="comment">// TODO(student): This is not thread-safe!</span>
+
+<span class="keyword">public</span>:
+    <span class="keyword">void</span> <span class="function">handle_request</span>(HttpRequest& req) {
+        total_requests_++;  <span class="comment">// Race condition!</span>
+        <span class="comment">// ... rest of handling ...</span>
+    }
+};
+                </pre></div>
+
+                <p><strong>Your Task:</strong> Fix the race condition using std::atomic.</p>
+
+                <div class="hint-section">
+                    <h5>💡 Thinking Points:</h5>
+                    <ul>
+                        <li>What happens when multiple threads increment <code>total_requests_</code> simultaneously?</li>
+                        <li>Is <code>++</code> an atomic operation? (Hint: It's actually read-modify-write)</li>
+                        <li>What are three ways to make this thread-safe?</li>
+                    </ul>
+                </div>
+
+                <button class="show-solution-btn" onclick="toggleSolution('solution-1-3-hint')">
+                    💡 Show Hint: Approaches to Consider
+                </button>
+
+                <div id="solution-1-3-hint" class="solution-section solution-hidden">
+                    <h4>Three Possible Approaches</h4>
+
+                    <div class="alternatives">
+                        <div class="alternative chosen">
+                            <h5>✅ std::atomic (Best)</h5>
+                            <p>Use <code>std::atomic&lt;int&gt;</code> for lock-free increment</p>
+                            <p><strong>Why:</strong> No locks, no contention, compiler handles safety</p>
+                            <p><strong>Performance:</strong> ~10-20 CPU cycles</p>
+                        </div>
+
+                        <div class="alternative">
+                            <h5>⚠️ std::mutex</h5>
+                            <p>Protect counter with mutex lock</p>
+                            <p><strong>Why not:</strong> Overkill for simple counter, adds contention</p>
+                            <p><strong>Performance:</strong> ~100+ CPU cycles (lock overhead)</p>
+                        </div>
+
+                        <div class="alternative">
+                            <h5>❌ Ignore it</h5>
+                            <p>Hope the race condition doesn't matter</p>
+                            <p><strong>Why not:</strong> Undefined behavior, incorrect metrics</p>
+                            <p><strong>Result:</strong> Lost increments, wrong totals</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="show-solution-btn" onclick="toggleSolution('solution-1-3')">
+                    ✅ Show Solution
+                </button>
+
+                <div id="solution-1-3" class="solution-section solution-hidden">
+                    <h4>✅ Solution: Using std::atomic</h4>
+
+                    <div class="code-block"><pre>
+<span class="comment">// include/http_server.h - Thread-safe counter with atomic</span>
+<span class="keyword">#include</span> <span class="string">&lt;atomic&gt;</span>
+
+<span class="keyword">class</span> HttpServer {
+<span class="keyword">private</span>:
+    std::atomic&lt;<span class="keyword">int</span>&gt; total_requests_{0};  <span class="comment">// ✅ Thread-safe!</span>
+
+<span class="keyword">public</span>:
+    <span class="keyword">void</span> <span class="function">handle_request</span>(HttpRequest& req) {
+        <span class="comment">// Option 1: Simple increment (uses default memory ordering)</span>
+        total_requests_++;
+
+        <span class="comment">// Option 2: Explicit fetch_add (more control over memory ordering)</span>
+        <span class="comment">// total_requests_.fetch_add(1, std::memory_order_relaxed);</span>
+
+        <span class="comment">// ... rest of handling ...</span>
+    }
+
+    <span class="keyword">int</span> <span class="function">get_total_requests</span>() <span class="keyword">const</span> {
+        <span class="keyword">return</span> total_requests_.load(std::memory_order_relaxed);
+    }
+};
+                    </pre></div>
+
+                    <p><strong>Explanation:</strong></p>
+                    <ul>
+                        <li><code>std::atomic&lt;int&gt;</code> provides lock-free, thread-safe operations</li>
+                        <li>Increment (<code>++</code>) is now atomic - no race condition</li>
+                        <li><code>memory_order_relaxed</code> is sufficient for simple counters (no ordering requirements)</li>
+                        <li>Compiler generates appropriate CPU instructions (e.g., <code>lock inc</code> on x86)</li>
+                    </ul>
+
+                    <p><strong>Why atomic is better than mutex for counters:</strong></p>
+                    <ul>
+                        <li>No context switching overhead</li>
+                        <li>No deadlock risk</li>
+                        <li>Hardware-level atomic instructions (lock-free)</li>
+                        <li>Significantly faster for simple increment/decrement</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>📊 Performance Analysis</h3>
+            <div class="success-box">
+                <h4>Expected Results Summary</h4>
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Sequential (Phase 0)</th>
+                            <th>Thread-Per-Request (Phase 1)</th>
+                            <th>Improvement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1 client</td>
+                            <td>100%</td>
+                            <td>100%</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>20 clients</td>
+                            <td>50%</td>
+                            <td><span class="improvement">88%</span></td>
+                            <td><span class="improvement">+38pp</span></td>
+                        </tr>
+                        <tr>
+                            <td>50 clients</td>
+                            <td>30%</td>
+                            <td><span class="improvement">65%</span></td>
+                            <td><span class="improvement">+35pp</span></td>
+                        </tr>
+                        <tr>
+                            <td>Throughput</td>
+                            <td>~200 RPS</td>
+                            <td>~800 RPS</td>
+                            <td><span class="improvement">4x</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="decision-point">
+                <h4>🤔 Design Decision: Why Thread-Per-Request?</h4>
+
+                <div class="alternatives">
+                    <div class="alternative">
+                        <h5>❌ Sequential Processing</h5>
+                        <p><strong>Pros:</strong> Simple, no concurrency bugs</p>
+                        <p><strong>Cons:</strong> 200 RPS max, head-of-line blocking</p>
+                        <p><strong>Verdict:</strong> Too slow for production</p>
+                    </div>
+
+                    <div class="alternative chosen">
+                        <h5>✅ Thread-Per-Request</h5>
+                        <p><strong>Pros:</strong> Simple parallelism, immediate gains</p>
+                        <p><strong>Cons:</strong> Thread creation overhead (500μs)</p>
+                        <p><strong>Verdict:</strong> Best for initial optimization</p>
+                    </div>
+
+                    <div class="alternative">
+                        <h5>⏭️ Thread Pool</h5>
+                        <p><strong>Pros:</strong> Amortizes creation cost</p>
+                        <p><strong>Cons:</strong> More complex, premature optimization</p>
+                        <p><strong>Verdict:</strong> Save for Phase 6</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h4>⚠️ Key Learning: Thread Creation Overhead</h4>
+                <p>Profiling revealed thread creation takes ~500μs, but actual request work is only ~5μs. That's <strong>100x overhead!</strong> This becomes the bottleneck in Phase 5-6.</p>
+            </div>
+
+            <div class="success-box">
+                <h4>✅ What You Learned</h4>
+                <ul>
+                    <li>How to use std::thread for parallelism in C++</li>
+                    <li>The performance impact of thread-per-request model</li>
+                    <li>How to measure success rates and latency</li>
+                    <li>Why simple solutions are best for initial optimizations</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Placeholder for remaining phases - will continue in next message -->
+        <div class="content-panel" id="phase2">
+            <h2>Phase 2: Async I/O with Producer-Consumer Pattern</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="phase3">
+            <h2>Phase 3: JSON Parser Optimization</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="phase4">
+            <h2>Phase 4: Hash-Based Mutex Pool</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="phase5">
+            <h2>Phase 5: Lock-Free Ring Buffer & Profiling</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="phase6">
+            <h2>Phase 6: Thread Pool Architecture</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="phase7">
+            <h2>Phase 7: HTTP Keep-Alive & Listen Backlog</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="future">
+            <h2>🔮 Future Phases: Complete the Platform</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d;">Content coming in next iteration...</p>
+        </div>
+
+        <div class="content-panel" id="decision-tree">
+            <h2>🌳 Interactive Decision Tree</h2>
+            <p style="font-size: 1.1em; color: #7f8c8d; margin-bottom: 30px;">
+                Explore all 7 optimization phases and their architectural decisions.
+            </p>
+            <div class="info-box">
+                <p><strong>Decision tree visualization will be embedded here.</strong></p>
+                <p>For now, view it separately at: <a href="docs/index.html" target="_blank">Decision Tree Visualization</a></p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p style="font-size: 1.2em; margin-bottom: 10px;">
+                <strong>MetricStream Learning Hub</strong>
+            </p>
+            <p style="opacity: 0.8;">
+                Build production systems. Learn by doing. Measure everything.
+            </p>
+            <p style="margin-top: 20px; opacity: 0.7; font-size: 0.9em;">
+                View source code: <a href="https://github.com/kapil0x/MetricsStream" style="color: #3498db;">GitHub Repository</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function showPhase(phaseId) {
+            // Hide all content panels
+            document.querySelectorAll('.content-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.phase-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected panel
+            document.getElementById(phaseId).classList.add('active');
+
+            // Highlight active tab
+            event.target.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleSolution(solutionId) {
+            const solution = document.getElementById(solutionId);
+            const button = event.target;
+
+            if (solution.classList.contains('solution-hidden')) {
+                // Show solution
+                solution.classList.remove('solution-hidden');
+                solution.classList.add('solution-visible');
+                button.textContent = button.textContent.replace('Show', 'Hide');
+                button.style.background = 'linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%)';
+            } else {
+                // Hide solution
+                solution.classList.remove('solution-visible');
+                solution.classList.add('solution-hidden');
+                button.textContent = button.textContent.replace('Hide', 'Show');
+                button.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }
+        }
+
+        function toggleArchitecture(phaseId) {
+            const beforeEl = document.getElementById(phaseId + '-before');
+            const afterEl = document.getElementById(phaseId + '-after');
+
+            if (beforeEl.style.display === 'none') {
+                // Show before, hide after
+                beforeEl.style.display = 'block';
+                afterEl.style.display = 'none';
+            } else {
+                // Show after, hide before
+                beforeEl.style.display = 'none';
+                afterEl.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
