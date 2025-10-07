@@ -81,20 +81,38 @@ void HttpServer::run_server() {
             continue;
         }
 
-        // Read request
+        // TODO(student): Phase 1 - Implement thread-per-request pattern
+        //
+        // PROBLEM: Currently, we process each request sequentially in the accept loop.
+        // This means while we're reading, parsing, and responding to one request,
+        // all other incoming connections wait in the kernel queue.
+        //
+        // YOUR TASK: Modify this code to spawn a new thread for each connection.
+        //
+        // HINTS:
+        // 1. Create a lambda or helper function that takes `client_socket` as parameter
+        // 2. Move all the request processing code (read, parse, handle, write, close) into that function
+        // 3. Spawn a std::thread to run that function
+        // 4. Make sure to detach() the thread so it runs independently
+        // 5. The accept loop should ONLY accept connections and spawn threads - nothing else!
+        //
+        // EXPECTED RESULT: With 20 concurrent clients, success rate improves from ~60% to ~85-90%
+        //
+        // CURRENT CODE (sequential processing):
         char buffer[4096] = {0};
         ssize_t bytes_read = read(client_socket, buffer, sizeof(buffer) - 1);
-        
+
         if (bytes_read > 0) {
             std::string request_data(buffer, bytes_read);
             HttpRequest request = parse_request(request_data);
             HttpResponse response = handle_request(request);
-            
+
             std::string response_str = format_response(response);
             write(client_socket, response_str.c_str(), response_str.length());
         }
 
         close(client_socket);
+        // END TODO
     }
 
     close(server_fd);
