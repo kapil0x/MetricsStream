@@ -669,11 +669,11 @@ $ ./build/load_test 8080 20 10</div>
 
             <div class="info-box">
                 <h3>What is this?</h3>
-                <p>A hands-on tutorial for building a metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge—just like working on infrastructure teams at companies like Google, Meta, Amazon, or Netflix.</p>
+                <p>A hands-on tutorial for building a production-grade metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge—using the same engineering methodology as infrastructure teams at Google, Meta, Amazon, and Netflix.</p>
 
                 <div style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
                     <p style="color: #fff; margin: 0; line-height: 1.7;">
-                        <strong style="color: #f1c40f;">💼 Real-World Engineering:</strong> This mirrors how infrastructure is built at Big Tech companies. Engineers don't use frameworks—they build custom solutions optimized for their specific scale and requirements. You'll learn the same systematic approach: measure bottlenecks, design solutions, implement optimizations, and validate with metrics.
+                        <strong style="color: #f1c40f;">💼 Production Engineering Approach:</strong> This teaches the same systematic methodology used to build production systems at Big Tech companies. Engineers don't use frameworks—they build custom solutions optimized for their specific scale. You'll learn: measure bottlenecks with profiling → design targeted solutions → implement optimizations → validate with load tests. This is production engineering.
                     </p>
                 </div>
             </div>
@@ -681,17 +681,18 @@ $ ./build/load_test 8080 20 10</div>
             <div class="warning-box" style="margin-top: 20px;">
                 <h4>⚠️ What This Is NOT</h4>
                 <ul>
-                    <li>❌ <strong>Production-ready code</strong> - No error handling, timeouts, or connection limits</li>
-                    <li>❌ <strong>Complete monitoring platform</strong> - Only the ingestion layer (Milestone 1 of 4)</li>
-                    <li>❌ <strong>Prometheus/DataDog replacement</strong> - Simplified for learning, missing critical features</li>
-                    <li>❌ <strong>Performance benchmark</strong> - Measured on localhost with synthetic load</li>
+                    <li>❌ <strong>Complete monitoring platform</strong> - Only the ingestion component (Craft #1 of series)</li>
+                    <li>❌ <strong>Prometheus/DataDog replacement</strong> - Missing storage, query engine, visualization</li>
+                    <li>❌ <strong>Production deployment ready</strong> - No TLS, authentication, monitoring, or graceful shutdown</li>
+                    <li>❌ <strong>Absolute performance benchmark</strong> - Measured on localhost; real-world has network latency</li>
                 </ul>
 
                 <h4 style="margin-top: 15px;">✅ What This IS</h4>
                 <ul>
-                    <li>✅ <strong>Systems programming tutorial</strong> - Learn concurrency, I/O, and performance optimization</li>
-                    <li>✅ <strong>Progressive optimization case study</strong> - Measure, identify bottlenecks, optimize, repeat</li>
-                    <li>✅ <strong>Foundation for production systems</strong> - Understand concepts before using production libraries</li>
+                    <li>✅ <strong>Production-grade engineering</strong> - Real concurrency patterns, lock-free data structures, performance optimization</li>
+                    <li>✅ <strong>Systematic optimization methodology</strong> - Profile → measure → optimize → validate (Big Tech approach)</li>
+                    <li>✅ <strong>Foundation for real systems</strong> - Core patterns used in production infrastructure at scale</li>
+                    <li>✅ <strong>Hands-on implementation</strong> - You write the code, see the bottlenecks, implement the fixes</li>
                 </ul>
             </div>
 
@@ -1368,29 +1369,34 @@ Resource Usage: 45% CPU, 150MB memory</div>
                     <p><strong>What you'll build:</strong> Transform the sequential HTTP server into a threaded version by implementing the TODO markers below.</p>
                 </div>
 
-                <h5>Step 1: Setup Your Workspace</h5>
-                <div class="warning-box">
-                    <h5>📝 Important Note About This Exercise</h5>
-                    <p><strong>The current codebase has ALL 7 phases implemented.</strong> This means:</p>
-                    <ul>
-                        <li>✅ You CAN build and run the system to see the final result (100% success rate, 2,253 RPS)</li>
-                        <li>✅ You CAN read the Phase 1 code concepts below to understand thread-per-request pattern</li>
-                        <li>❌ You CANNOT see the Phase 1-only performance (85-90% success) since the code includes Phases 2-7 optimizations</li>
-                    </ul>
-                    <p style="margin-top: 10px;"><strong>To truly practice Phase 1:</strong> You would need to checkout an earlier git commit or create a simplified version from scratch following the code examples below.</p>
-                </div>
+                <h5>Step 1: Checkout Phase 1 Starter Branch</h5>
+                <div class="lab-section" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border: none;">
+                    <h5 style="color: #fff;">🌿 Ready to Code? Use the Git Branches!</h5>
+                    <p style="color: rgba(255,255,255,0.95); line-height: 1.7;">We've created starter branches with TODO comments so you can implement Phase 1 yourself:</p>
 
-                <div class="command">$ cd /path/to/metricstream
+                    <div class="command" style="background: #2c3e50; color: #ecf0f1; margin: 15px 0;">
+# Start with Phase 1 starter (has Phase 0 baseline + TODOs)
+$ git checkout phase-1-starter
 
-# Build the current (Phase 7) version
+# Build and see the sequential baseline
 $ mkdir -p build
 $ cmake -B build
-$ make -C build metricstream_server</div>
+$ make -C build metricstream_server load_test
 
-                <h5>Step 2: Understand Current vs. Phase 1 Code</h5>
-                <p><strong>Note:</strong> The current codebase (main branch) has the complete Phase 7 implementation with thread pools and HTTP Keep-Alive. To understand Phase 1, we'll show you what the sequential baseline looked like, and what the Phase 1 threaded version would be.</p>
+# Run baseline test (you'll see poor performance)
+$ ./build/metricstream_server &
+$ ./build/load_test 8080 20 10
+# Expected: ~60% success rate (sequential bottleneck)</div>
 
-                <h5>Step 3: Sequential Baseline (What Phase 0 Looked Like)</h5>
+                    <p style="color: #fff; margin-top: 15px;"><strong>📝 Your Task:</strong> Open <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">src/http_server.cpp</code> and read the TODO comments. Implement thread-per-request pattern yourself!</p>
+
+                    <p style="color: rgba(255,255,255,0.9); margin-top: 10px; font-size: 0.9em;">When done, compare your implementation with: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">git checkout phase-1-solution</code></p>
+                </div>
+
+                <h5>Step 2: Understand the Sequential Baseline</h5>
+                <p>The <code>phase-1-starter</code> branch contains the Phase 0 sequential implementation. Here's what you're starting with:</p>
+
+                <h5>Step 3: Sequential Baseline Code</h5>
                 <div class="code-block"><pre><span class="comment">// src/http_server.cpp - PHASE 0: Sequential implementation (for reference)</span>
 
 <span class="keyword">void</span> HttpServer::<span class="function">start</span>() {
@@ -1415,16 +1421,19 @@ $ make -C build metricstream_server</div>
     }
 }</pre></div>
 
-                <h5>Step 4: Understanding the Phase 1 Transformation</h5>
-                <p><strong>Concept:</strong> Here's how you would transform sequential code into thread-per-request model.</p>
+                <h5>Step 4: Implement Thread-Per-Request (Your Turn!)</h5>
+                <p><strong>This is where you code!</strong> Transform the sequential baseline into a threaded server. The TODO comments in <code>src/http_server.cpp</code> guide you through it.</p>
 
-                <div class="info-box" style="background: #fff3cd; border-left: 4px solid #f39c12;">
-                    <p><strong>📘 Learning Note:</strong> The current repository already has all phases implemented. This section teaches you the <em>concepts</em> of Phase 1. To practice hands-on:</p>
+                <div class="info-box" style="background: #e8f5e9; border-left: 4px solid #27ae60;">
+                    <p><strong>💡 Implementation Hints (from the TODO comments):</strong></p>
                     <ul>
-                        <li>Create a new minimal HTTP server project from scratch</li>
-                        <li>Or, simplify the current code by removing thread pool and Keep-Alive features</li>
-                        <li>Then apply the threading transformation shown below</li>
+                        <li>Create a lambda that captures <code>this</code> and <code>client_socket</code></li>
+                        <li>Move all request processing (read, parse, handle, write, close) into the lambda</li>
+                        <li>Spawn <code>std::thread</code> with the lambda</li>
+                        <li>Call <code>.detach()</code> so the thread runs independently</li>
+                        <li>The accept loop should ONLY accept and spawn threads—nothing else!</li>
                     </ul>
+                    <p style="margin-top: 10px;"><strong>Expected result:</strong> Success rate improves from ~60% to ~85-90% with 20 clients</p>
                 </div>
 
                 <div class="code-block"><pre>
