@@ -55,44 +55,99 @@
         }
 
         .phase-nav {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 25px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
             margin-bottom: 30px;
         }
 
+        .nav-section {
+            margin-bottom: 20px;
+        }
+
+        .nav-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .nav-section-title {
+            color: #7f8c8d;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            padding-left: 5px;
+            font-weight: 600;
+        }
+
+        .nav-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .phase-tab {
-            padding: 15px 10px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px solid transparent;
+            position: relative;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1.5px solid rgba(255, 255, 255, 0.15);
             border-radius: 8px;
             cursor: pointer;
-            font-weight: 600;
             transition: all 0.3s ease;
             text-align: center;
-            font-size: 0.9em;
+            font-size: 0.85em;
+            color: #bdc3c7;
+            min-width: 100px;
+            backdrop-filter: blur(10px);
         }
 
         .phase-tab:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            color: #ecf0f1;
         }
 
         .phase-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             color: white;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            border-color: #3498db;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.5);
+            font-weight: 600;
         }
 
         .phase-tab .phase-number {
-            font-size: 1.2em;
+            font-size: 1.1em;
+            font-weight: 700;
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+
+        .phase-tab .phase-label {
+            font-size: 0.9em;
+            opacity: 0.85;
+        }
+
+        .phase-tab.active .phase-number,
+        .phase-tab.active .phase-label {
+            opacity: 1;
+        }
+
+        /* Progress indicator */
+        .phase-tab.completed::after {
+            content: '✓';
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            color: #27ae60;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .phase-tab.active.completed::after {
+            color: #a3f7bf;
         }
 
         .content-panel {
@@ -139,6 +194,21 @@
             padding: 20px;
             margin: 20px 0;
             border-radius: 8px;
+        }
+
+        .info-box ul {
+            color: #2c3e50;
+        }
+
+        .info-box ul li {
+            color: #2c3e50;
+            margin: 8px 0;
+        }
+
+        /* Dark info boxes (with inline dark background) */
+        .info-box[style*="background: #1a"] ul,
+        .info-box[style*="background: #1a"] ul li {
+            color: #ecf0f1 !important;
         }
 
         .warning-box {
@@ -486,25 +556,69 @@
         </header>
 
         <div class="phase-nav">
-            <div class="phase-tab active" onclick="showPhase('overview')">
-                <span class="phase-number">📚</span>
-                Overview
+            <!-- Getting Started Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">📖 Getting Started</div>
+                <div class="nav-row">
+                    <div class="phase-tab active" onclick="showPhase('overview')">
+                        <span class="phase-number">📚</span>
+                        <span class="phase-label">Overview</span>
+                    </div>
+                    <div class="phase-tab" onclick="showPhase('phase0')">
+                        <span class="phase-number">0</span>
+                        <span class="phase-label">System Design</span>
+                    </div>
+                </div>
             </div>
-            <div class="phase-tab" onclick="showPhase('phase0')">
-                <span class="phase-number">Phase 0</span>
-                Design
+
+            <!-- Milestone 1: Phases 1-7 -->
+            <div class="nav-section">
+                <div class="nav-section-title">🚀 Milestone 1: High-Performance Ingestion (2,253 RPS)</div>
+                <div class="nav-row">
+                    <div class="phase-tab completed" onclick="showPhase('phase1')">
+                        <span class="phase-number">1</span>
+                        <span class="phase-label">Threading</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase2')">
+                        <span class="phase-number">2</span>
+                        <span class="phase-label">Async I/O</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase3')">
+                        <span class="phase-number">3</span>
+                        <span class="phase-label">JSON Parser</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase4')">
+                        <span class="phase-number">4</span>
+                        <span class="phase-label">Mutex Pool</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase5')">
+                        <span class="phase-number">5</span>
+                        <span class="phase-label">Thread Pool</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase6')">
+                        <span class="phase-number">6</span>
+                        <span class="phase-label">Ring Buffer</span>
+                    </div>
+                    <div class="phase-tab completed" onclick="showPhase('phase7')">
+                        <span class="phase-number">7</span>
+                        <span class="phase-label">Keep-Alive</span>
+                    </div>
+                </div>
             </div>
-            <div class="phase-tab" onclick="showPhase('phase1')">
-                <span class="phase-number">Milestone 1</span>
-                Ingestion Layer
-            </div>
-            <div class="phase-tab" onclick="showPhase('future')">
-                <span class="phase-number">🔮</span>
-                Future Milestones
-            </div>
-            <div class="phase-tab" onclick="showPhase('decision-tree')">
-                <span class="phase-number">🌳</span>
-                Decisions
+
+            <!-- What's Next Section -->
+            <div class="nav-section">
+                <div class="nav-section-title">🔮 What's Next</div>
+                <div class="nav-row">
+                    <div class="phase-tab" onclick="showPhase('future')">
+                        <span class="phase-number">🔮</span>
+                        <span class="phase-label">Future Milestones</span>
+                    </div>
+                    <div class="phase-tab" onclick="showPhase('decision-tree')">
+                        <span class="phase-number">🌳</span>
+                        <span class="phase-label">Decision Tree</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1649,12 +1763,11 @@ Success Rate: ?</div>
                 Phase 1 established parallelism but introduced new bottlenecks. Phases 2-7 systematically optimize each bottleneck discovered through profiling and measurement.
             </p>
 
-            <!-- ============================================= -->
-            <!-- PHASE 2: ASYNC I/O WITH PRODUCER-CONSUMER -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #3498db; font-size: 2em; border-left: 5px solid #3498db; padding-left: 15px;">
-                Phase 2: Async I/O with Producer-Consumer Pattern
-            </h3>
+        </div>
+
+        <!-- Phase 2 Panel -->
+        <div class="content-panel" id="phase2">
+            <h2>Phase 2: Async I/O with Producer-Consumer Pattern</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #3498db;">
                 <h4 style="color: #3498db;">Learning Objectives</h4>
@@ -1825,12 +1938,11 @@ I/O Thread: Write batch (5ms) → Write batch...</pre>
                 </ul>
             </div>
 
-            <!-- ============================================= -->
-            <!-- PHASE 3: JSON PARSER OPTIMIZATION -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #e67e22; font-size: 2em; border-left: 5px solid #e67e22; padding-left: 15px;">
-                Phase 3: JSON Parser Optimization
-            </h3>
+        </div>
+
+        <!-- Phase 3 Panel -->
+        <div class="content-panel" id="phase3">
+            <h2>Phase 3: JSON Parser Optimization</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #e67e22;">
                 <h4 style="color: #e67e22;">Learning Objectives</h4>
@@ -2036,12 +2148,11 @@ MetricBatch IngestionService::<span class="function">parse_json_metrics_optimize
                 </ul>
             </div>
 
-            <!-- ============================================= -->
-            <!-- PHASE 4: HASH-BASED MUTEX POOL -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #9b59b6; font-size: 2em; border-left: 5px solid #9b59b6; padding-left: 15px;">
-                Phase 4: Hash-Based Mutex Pool
-            </h3>
+        </div>
+
+        <!-- Phase 4 Panel -->
+        <div class="content-panel" id="phase4">
+            <h2>Phase 4: Hash-Based Mutex Pool</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #9b59b6;">
                 <h4 style="color: #9b59b6;">Learning Objectives</h4>
@@ -2207,12 +2318,11 @@ Contention: ~6% (only same-hash collisions)</pre>
                 </ul>
             </div>
 
-            <!-- ============================================= -->
-            <!-- PHASE 5: THREAD POOL ARCHITECTURE -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #27ae60; font-size: 2em; border-left: 5px solid #27ae60; padding-left: 15px;">
-                Phase 5: Thread Pool Architecture
-            </h3>
+        </div>
+
+        <!-- Phase 5 Panel -->
+        <div class="content-panel" id="phase5">
+            <h2>Phase 5: Thread Pool Architecture</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #27ae60;">
                 <h4 style="color: #27ae60;">Learning Objectives</h4>
@@ -2433,12 +2543,11 @@ Overhead: ~1μs to queue task (99% reduction!)</pre>
                 </ul>
             </div>
 
-            <!-- ============================================= -->
-            <!-- PHASE 6: LOCK-FREE RING BUFFER -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #e74c3c; font-size: 2em; border-left: 5px solid #e74c3c; padding-left: 15px;">
-                Phase 6: Lock-Free Ring Buffer
-            </h3>
+        </div>
+
+        <!-- Phase 6 Panel -->
+        <div class="content-panel" id="phase6">
+            <h2>Phase 6: Lock-Free Ring Buffer</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #e74c3c;">
                 <h4 style="color: #e74c3c;">Learning Objectives</h4>
@@ -2627,12 +2736,11 @@ Contention: None (single writer/reader)</pre>
                 </ul>
             </div>
 
-            <!-- ============================================= -->
-            <!-- PHASE 7: HTTP KEEP-ALIVE -->
-            <!-- ============================================= -->
-            <h3 style="margin-top: 50px; color: #f39c12; font-size: 2em; border-left: 5px solid #f39c12; padding-left: 15px;">
-                Phase 7: HTTP Keep-Alive & Listen Backlog Tuning
-            </h3>
+        </div>
+
+        <!-- Phase 7 Panel -->
+        <div class="content-panel" id="phase7">
+            <h2>Phase 7: HTTP Keep-Alive & Listen Backlog Tuning</h2>
 
             <div class="info-box" style="background: #1a252f; border-left: 4px solid #f39c12;">
                 <h4 style="color: #f39c12;">Learning Objectives</h4>

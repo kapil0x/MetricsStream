@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event-Driven I/O: Current vs kqueue Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4af626;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .architecture {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            border: 3px solid #666;
+        }
+
+        .architecture.current {
+            border-color: #ff6b6b;
+        }
+
+        .architecture.new {
+            border-color: #4af626;
+        }
+
+        .arch-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .current .arch-title {
+            background: #3a1a1a;
+            color: #ff6b6b;
+        }
+
+        .new .arch-title {
+            background: #1a3a1a;
+            color: #4af626;
+        }
+
+        .diagram-box {
+            background: #2a2a2a;
+            border: 2px solid #4af626;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .diagram-box.blocking {
+            border-color: #ff6b6b;
+            background: #2a1a1a;
+        }
+
+        .box-title {
+            color: #4af626;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .blocking .box-title {
+            color: #ff6b6b;
+        }
+
+        .thread-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .thread {
+            background: #1a1a1a;
+            border: 2px solid #666;
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .thread.busy {
+            border-color: #ff6b6b;
+            background: #2a1a1a;
+        }
+
+        .thread.working {
+            border-color: #4af626;
+            background: #1a2a1a;
+        }
+
+        .thread-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .thread-state {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        .blocking-indicator {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #4af626;
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+
+        .event-loop {
+            background: #1a3a1a;
+            border: 3px solid #4af626;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .event-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .event-item {
+            background: #2a2a2a;
+            border: 2px solid #4af626;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .event-item.ready {
+            border-color: #ffeb3b;
+            background: #3a3a1a;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-box {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            color: #999;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            color: #4af626;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .metric-value.bad {
+            color: #ff6b6b;
+        }
+
+        .code-example {
+            background: #0a0a0a;
+            border: 1px solid #4af626;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            color: #ffeb3b;
+            font-weight: bold;
+        }
+
+        .comment {
+            color: #666;
+        }
+
+        .timeline {
+            margin: 20px 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin: 10px 0;
+            align-items: center;
+        }
+
+        .timeline-time {
+            width: 80px;
+            color: #4af626;
+            font-weight: bold;
+        }
+
+        .timeline-bar {
+            flex: 1;
+            height: 30px;
+            background: #2a2a2a;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            position: relative;
+        }
+
+        .timeline-bar.waiting {
+            background: #3a1a1a;
+            border: 2px solid #ff6b6b;
+        }
+
+        .timeline-bar.working {
+            background: #1a3a1a;
+            border: 2px solid #4af626;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .concept-box {
+            background: #1e1e1e;
+            border-left: 5px solid #4af626;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .concept-title {
+            color: #4af626;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .vs-indicator {
+            text-align: center;
+            font-size: 3em;
+            color: #ffeb3b;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Event-Driven I/O: Blocking vs Non-Blocking Architecture</h1>
+
+        <div class="comparison">
+            <!-- CURRENT ARCHITECTURE -->
+            <div class="architecture current">
+                <div class="arch-title">❌ CURRENT: Thread-Per-Connection Model</div>
+
+                <div class="diagram-box blocking">
+                    <div class="box-title">Problem: Threads Wait (Block) on I/O</div>
+
+                    <div class="thread-visual">
+                        <div class="thread busy">
+                            <div class="thread-label">Accept Thread</div>
+                            <div class="thread-state">
+                                <span class="blocking-indicator">⏳ BLOCKED</span> on accept()
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Waiting for connection... doing nothing...
+                            </div>
+                        </div>
+
+                        <div class="thread busy">
+                            <div class="thread-label">Worker Thread 1</div>
+                            <div class="thread-state">
+                                <span class="blocking-indicator">⏳ BLOCKED</span> on read()
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 1: Waiting for data... CPU idle...
+                            </div>
+                        </div>
+
+                        <div class="thread busy">
+                            <div class="thread-label">Worker Thread 2</div>
+                            <div class="thread-state">
+                                <span class="blocking-indicator">⏳ BLOCKED</span> on read()
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 2: Waiting for data... CPU idle...
+                            </div>
+                        </div>
+
+                        <div class="thread working">
+                            <div class="thread-label">Worker Thread 3</div>
+                            <div class="thread-state">
+                                ✅ WORKING
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 3: Processing request (rare!)
+                            </div>
+                        </div>
+
+                        <div class="thread busy">
+                            <div class="thread-label">Worker Thread 4</div>
+                            <div class="thread-state">
+                                <span class="blocking-indicator">⏳ BLOCKED</span> on read()
+                            </div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 4: Waiting for data...
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 10px; color: #ff6b6b;">
+                            ⚠️ 4 out of 5 threads WASTED waiting!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-example">
+<pre>// Current Code (Blocking)
+while (running) {
+    <span class="comment">// Thread BLOCKS here waiting</span>
+    int client = <span class="highlight">accept</span>(server_fd, ...);
+
+    thread_pool.enqueue([client]() {
+        <span class="comment">// Thread BLOCKS here too!</span>
+        ssize_t bytes = <span class="highlight">read</span>(client, ...);
+
+        <span class="comment">// Finally doing work</span>
+        process_request(...);
+
+        <span class="highlight">write</span>(client, ...);
+        close(client);
+    });
+}</pre>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric-box">
+                        <div class="metric-label">Memory per Connection</div>
+                        <div class="metric-value bad">8 MB</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(thread stack)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Max Connections</div>
+                        <div class="metric-value bad">~1,000</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(limited by threads)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">CPU Efficiency</div>
+                        <div class="metric-value bad">20-30%</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(mostly waiting)</div>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <div style="color: #4af626; font-weight: bold; margin-bottom: 10px;">
+                        Timeline: Worker Thread Lifecycle
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">0-90%</div>
+                        <div class="timeline-bar waiting">⏳ Blocked waiting for I/O</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">90-100%</div>
+                        <div class="timeline-bar working">⚡ Actually processing</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW ARCHITECTURE -->
+            <div class="architecture new">
+                <div class="arch-title">✅ NEW: Event-Driven Model (kqueue/epoll)</div>
+
+                <div class="event-loop">
+                    <div class="box-title">Event Loop: OS Tells Us When Ready</div>
+
+                    <div style="text-align: center; margin: 15px 0; color: #4af626;">
+                        <strong>Single Thread Monitors ALL Connections!</strong>
+                    </div>
+
+                    <div class="event-list">
+                        <div class="event-item ready">
+                            <strong>Listen Socket</strong><br>
+                            🟢 READABLE<br>
+                            <small>New connection!</small>
+                        </div>
+                        <div class="event-item ready">
+                            <strong>Client 1 Socket</strong><br>
+                            🟢 READABLE<br>
+                            <small>Data arrived!</small>
+                        </div>
+                        <div class="event-item">
+                            <strong>Client 2 Socket</strong><br>
+                            ⚪ Waiting<br>
+                            <small>No data yet</small>
+                        </div>
+                        <div class="event-item ready">
+                            <strong>Client 3 Socket</strong><br>
+                            🟢 READABLE<br>
+                            <small>Data arrived!</small>
+                        </div>
+                        <div class="event-item">
+                            <strong>Client 4 Socket</strong><br>
+                            ⚪ Waiting<br>
+                            <small>No data yet</small>
+                        </div>
+                        <div class="event-item ready">
+                            <strong>Client 5 Socket</strong><br>
+                            🟢 WRITABLE<br>
+                            <small>Can send now!</small>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                        <code>
+                        kqueue() returns: 4 events ready<br>
+                        → Only process those 4 (skip the waiting ones!)<br>
+                        → Zero CPU wasted on not-ready connections
+                        </code>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="diagram-box">
+                    <div class="box-title">Thread Pool: Only for CPU Work</div>
+
+                    <div class="thread-visual">
+                        <div class="thread working">
+                            <div class="thread-label">Worker 1</div>
+                            <div class="thread-state">✅ WORKING</div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 1: Processing request
+                            </div>
+                        </div>
+
+                        <div class="thread working">
+                            <div class="thread-label">Worker 2</div>
+                            <div class="thread-state">✅ WORKING</div>
+                            <div style="margin-top: 5px; font-size: 0.85em;">
+                                Client 3: Parsing JSON
+                            </div>
+                        </div>
+
+                        <div class="thread">
+                            <div class="thread-label">Worker 3</div>
+                            <div class="thread-state">💤 Idle (ready for work)</div>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 10px; color: #4af626;">
+                            ✅ Threads only used when there's real work!
+                        </div>
+                    </div>
+                </div>
+
+                <div class="code-example">
+<pre>// New Code (Non-Blocking with kqueue)
+int kq = <span class="highlight">kqueue()</span>;
+
+<span class="comment">// Register sockets</span>
+EV_SET(&event, listen_fd, EVFILT_READ, ...);
+kevent(kq, &event, 1, NULL, 0, NULL);
+
+while (running) {
+    <span class="comment">// Wait for ANY event (non-blocking!)</span>
+    int nevents = <span class="highlight">kevent</span>(kq, NULL, 0,
+                            events, MAX, NULL);
+
+    <span class="comment">// Process ONLY ready events</span>
+    for (int i = 0; i < nevents; i++) {
+        if (events[i].ident == listen_fd) {
+            <span class="comment">// New connection ready</span>
+            int client = accept(listen_fd, ...);
+            <span class="comment">// Add to kqueue</span>
+            EV_SET(&evt, client, EVFILT_READ, ...);
+        } else {
+            <span class="comment">// Client data ready - delegate</span>
+            int fd = events[i].ident;
+            thread_pool.enqueue([fd]() {
+                <span class="comment">// Data is ALREADY there!</span>
+                read(fd, ...);  <span class="comment">// Won't block</span>
+                process();
+                write(fd, ...);
+            });
+        }
+    }
+}</pre>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric-box">
+                        <div class="metric-label">Memory per Connection</div>
+                        <div class="metric-value">4 KB</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(just socket state)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">Max Connections</div>
+                        <div class="metric-value">100,000+</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(C10K problem solved!)</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-label">CPU Efficiency</div>
+                        <div class="metric-value">90-95%</div>
+                        <div style="font-size: 0.8em; margin-top: 5px;">(always working)</div>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <div style="color: #4af626; font-weight: bold; margin-bottom: 10px;">
+                        Timeline: Event Loop + Worker
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">0-5%</div>
+                        <div class="timeline-bar waiting">⏳ Waiting in kqueue</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">5-100%</div>
+                        <div class="timeline-bar working">⚡ Processing events</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="vs-indicator">⚡ VS 🐌</div>
+
+        <!-- DETAILED COMPARISON -->
+        <div class="concept-box full-width">
+            <div class="concept-title">🎯 Key Concept: Blocking vs Non-Blocking I/O</div>
+
+            <div class="comparison">
+                <div>
+                    <h3 style="color: #ff6b6b; margin-bottom: 10px;">Blocking I/O (Current)</h3>
+                    <ul style="line-height: 1.8; margin-left: 20px;">
+                        <li><code>accept()</code> blocks until connection arrives</li>
+                        <li><code>read()</code> blocks until data arrives</li>
+                        <li><code>write()</code> blocks until buffer has space</li>
+                        <li>Thread sits idle, wasting resources</li>
+                        <li>Need 1 thread per connection (roughly)</li>
+                        <li>Context switching overhead</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color: #4af626; margin-bottom: 10px;">Non-Blocking I/O (kqueue)</h3>
+                    <ul style="line-height: 1.8; margin-left: 20px;">
+                        <li><code>kqueue()</code> monitors many sockets at once</li>
+                        <li>Returns only when something is READY</li>
+                        <li>Never blocks - immediately know what to do</li>
+                        <li>1 thread handles thousands of connections</li>
+                        <li>Workers only for CPU-heavy tasks</li>
+                        <li>Minimal context switching</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- HOW KQUEUE WORKS -->
+        <div class="concept-box full-width">
+            <div class="concept-title">🔍 How kqueue() Actually Works</div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <div>
+                    <h4 style="color: #4af626; margin-bottom: 10px;">Step 1: Registration</h4>
+                    <div class="code-example">
+<pre>// Tell kernel: "Watch this socket"
+struct kevent event;
+EV_SET(&event,
+       socket_fd,      <span class="comment">// Which FD</span>
+       EVFILT_READ,    <span class="comment">// Watch for reads</span>
+       EV_ADD,         <span class="comment">// Add to queue</span>
+       0, 0, NULL);
+
+kevent(kq, &event, 1, NULL, 0, NULL);</pre>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #1a3a1a; border-radius: 5px;">
+                        Kernel now monitors this socket. When data arrives, it goes in the kqueue.
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="color: #4af626; margin-bottom: 10px;">Step 2: Wait for Events</h4>
+                    <div class="code-example">
+<pre>// Block until SOMETHING is ready
+struct kevent events[MAX];
+int n = kevent(kq,           <span class="comment">// Queue</span>
+               NULL, 0,      <span class="comment">// No changes</span>
+               events, MAX,  <span class="comment">// Get events</span>
+               NULL);        <span class="comment">// No timeout</span>
+
+<span class="comment">// Returns when: ANY socket has data!</span>
+<span class="comment">// n = number of ready sockets</span></pre>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #1a3a1a; border-radius: 5px;">
+                        Single call returns ALL ready sockets at once. No polling needed!
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="color: #4af626; margin-bottom: 10px;">Step 3: Process Events</h4>
+                    <div class="code-example">
+<pre>for (int i = 0; i < n; i++) {
+    int fd = events[i].ident;
+
+    if (fd == listen_fd) {
+        <span class="comment">// New connection</span>
+        int client = accept(fd, ...);
+        <span class="comment">// Register client too</span>
+        EV_SET(..., client, ...);
+    } else {
+        <span class="comment">// Data ready</span>
+        read(fd, ...);  <span class="comment">// Won't block!</span>
+        process();
+    }
+}</pre>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #1a3a1a; border-radius: 5px;">
+                        Only process sockets that are actually ready. Skip the rest!
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="color: #4af626; margin-bottom: 10px;">Step 4: Loop Forever</h4>
+                    <div class="code-example">
+<pre>while (running) {
+    <span class="comment">// Wait for next batch</span>
+    int n = kevent(...);
+
+    <span class="comment">// Process ready events</span>
+    handle_events(events, n);
+
+    <span class="comment">// Loop back - kernel keeps</span>
+    <span class="comment">// watching our sockets!</span>
+}</pre>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: #1a3a1a; border-radius: 5px;">
+                        Continuous monitoring with zero CPU when nothing is ready.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALOGY -->
+        <div class="concept-box full-width" style="border-left-color: #ffeb3b;">
+            <div class="concept-title" style="color: #ffeb3b;">🍽️ Restaurant Analogy</div>
+
+            <div class="comparison">
+                <div>
+                    <h3 style="color: #ff6b6b; margin-bottom: 15px;">Current (Blocking): One Waiter Per Table</h3>
+                    <p style="line-height: 1.8;">
+                        Imagine a restaurant where each table gets a dedicated waiter.
+                        The waiter stands at the table the ENTIRE time, even when:
+                    </p>
+                    <ul style="margin-left: 20px; line-height: 1.8; margin-top: 10px;">
+                        <li>Customer is reading the menu 📖 (waiter just stands there)</li>
+                        <li>Food is being cooked 🍳 (waiter waits)</li>
+                        <li>Customer is eating 🍽️ (waiter watches)</li>
+                        <li>Customer is chatting 💬 (waiter stays idle)</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #ff6b6b;">
+                        <strong>Result:</strong> Need 100 waiters for 100 tables. Most are standing around!
+                    </p>
+                </div>
+
+                <div>
+                    <h3 style="color: #4af626; margin-bottom: 15px;">kqueue (Event-Driven): Notification System</h3>
+                    <p style="line-height: 1.8;">
+                        Now imagine each table has a call button 🔔. One manager watches all buttons.
+                        When a button lights up:
+                    </p>
+                    <ul style="margin-left: 20px; line-height: 1.8; margin-top: 10px;">
+                        <li>Manager sees: "Table 5 ready to order"</li>
+                        <li>Sends available waiter to Table 5</li>
+                        <li>Takes order, sends to kitchen</li>
+                        <li>Waiter returns to pool (ready for next table)</li>
+                    </ul>
+                    <p style="margin-top: 10px; color: #4af626;">
+                        <strong>Result:</strong> 10 waiters serve 1000 tables! Only work when needed.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERFORMANCE COMPARISON -->
+        <div class="concept-box full-width">
+            <div class="concept-title">📊 Performance: The Numbers</div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background: #2a2a2a;">
+                        <th style="padding: 15px; text-align: left; border: 1px solid #666;">Metric</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #666; color: #ff6b6b;">Current (Blocking)</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #666; color: #4af626;">kqueue (Event-Driven)</th>
+                        <th style="padding: 15px; text-align: center; border: 1px solid #666;">Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #666;">Max Concurrent Connections</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">~1,000</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">100,000+</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">100x</td>
+                    </tr>
+                    <tr style="background: #1a1a1a;">
+                        <td style="padding: 15px; border: 1px solid #666;">Memory per Connection</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">8 MB (thread stack)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">4 KB (socket state)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">2000x less</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #666;">CPU Utilization</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">20-30% (waiting)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">90-95% (working)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">3-4x</td>
+                    </tr>
+                    <tr style="background: #1a1a1a;">
+                        <td style="padding: 15px; border: 1px solid #666;">Context Switches</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">High (per request)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">Low (only CPU work)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">10-50x less</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 15px; border: 1px solid #666;">Expected RPS</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">2,000</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">20,000-50,000</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">10-25x</td>
+                    </tr>
+                    <tr style="background: #1a1a1a;">
+                        <td style="padding: 15px; border: 1px solid #666;">Latency (avg)</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #ff6b6b;">0.5-1ms</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; color: #4af626;">0.1-0.3ms</td>
+                        <td style="padding: 15px; border: 1px solid #666; text-align: center; font-weight: bold;">3-5x faster</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- WHO USES THIS -->
+        <div class="concept-box full-width" style="border-left-color: #4af626;">
+            <div class="concept-title">🚀 Production Systems Using Event-Driven I/O</div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px;">
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2em; margin-bottom: 10px;">nginx</div>
+                    <div style="color: #999;">Web server handling millions of concurrent connections</div>
+                    <div style="margin-top: 10px; color: #4af626; font-weight: bold;">C10M capable</div>
+                </div>
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2em; margin-bottom: 10px;">Redis</div>
+                    <div style="color: #999;">In-memory database, single-threaded event loop</div>
+                    <div style="margin-top: 10px; color: #4af626; font-weight: bold;">100K+ ops/sec</div>
+                </div>
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2em; margin-bottom: 10px;">Node.js</div>
+                    <div style="color: #999;">JavaScript runtime, event-driven architecture</div>
+                    <div style="margin-top: 10px; color: #4af626; font-weight: bold;">High concurrency</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMPLEMENTATION STRATEGY -->
+        <div class="concept-box full-width">
+            <div class="concept-title">🛠️ Implementation Strategy for MetricStream</div>
+
+            <div style="margin-top: 20px;">
+                <h3 style="color: #4af626; margin-bottom: 15px;">Phase 8B: kqueue Integration</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4 style="margin-bottom: 10px;">1. Create kqueue Event Loop</h4>
+                        <ul style="margin-left: 20px; line-height: 1.8;">
+                            <li>Initialize kqueue file descriptor</li>
+                            <li>Register listening socket</li>
+                            <li>Main loop waits on kevent()</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 style="margin-bottom: 10px;">2. Handle Accept Events</h4>
+                        <ul style="margin-left: 20px; line-height: 1.8;">
+                            <li>When listen socket readable → accept()</li>
+                            <li>Set client socket to non-blocking</li>
+                            <li>Register client in kqueue</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 style="margin-bottom: 10px;">3. Handle Read Events</h4>
+                        <ul style="margin-left: 20px; line-height: 1.8;">
+                            <li>When client socket readable → data available</li>
+                            <li>Read immediately (won't block!)</li>
+                            <li>Delegate to thread pool for processing</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 style="margin-bottom: 10px;">4. Keep Thread Pool for CPU Work</h4>
+                        <ul style="margin-left: 20px; line-height: 1.8;">
+                            <li>JSON parsing (CPU-bound)</li>
+                            <li>Rate limiting (needs mutex)</li>
+                            <li>Response generation</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; padding: 20px; background: #1a3a1a; border-radius: 8px;">
+                    <strong style="color: #4af626;">Key Insight:</strong> Event loop handles I/O (fast), thread pool handles CPU work (parallel). Best of both worlds!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', () => {
+            const readyEvents = document.querySelectorAll('.event-item.ready');
+
+            // Simulate event notifications
+            setInterval(() => {
+                readyEvents.forEach((event, index) => {
+                    setTimeout(() => {
+                        event.style.transform = 'scale(1.05)';
+                        setTimeout(() => {
+                            event.style.transform = 'scale(1)';
+                        }, 200);
+                    }, index * 100);
+                });
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

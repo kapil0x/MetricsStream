@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricStream Request Flow - End to End</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4af626;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .toggle-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .toggle-btn {
+            background: #1e1e1e;
+            color: #4af626;
+            border: 2px solid #4af626;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 8px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: #4af626;
+            color: #0a0a0a;
+        }
+
+        .architecture {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .architecture.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .architecture-title {
+            text-align: center;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+
+        .old-arch .architecture-title {
+            color: #ff6b6b;
+        }
+
+        .new-arch .architecture-title {
+            color: #4af626;
+        }
+
+        .flow-diagram {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .client-section, .server-section, .storage-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #4af626;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #4af626;
+            padding-bottom: 5px;
+        }
+
+        .box {
+            background: #2a2a2a;
+            border: 2px solid #4af626;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .box-title {
+            color: #4af626;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .box-content {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .arrow {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: 2em;
+            margin: 10px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #4af626;
+            color: #0a0a0a;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .thread-pool {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .worker-thread {
+            background: #1a1a1a;
+            border: 2px solid #666;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            font-size: 0.8em;
+        }
+
+        .worker-thread.active {
+            border-color: #4af626;
+            background: #2a3a2a;
+        }
+
+        .timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .timeline-time {
+            width: 80px;
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .timeline-content {
+            flex: 1;
+            background: #2a2a2a;
+            padding: 10px;
+            border-left: 3px solid #4af626;
+            border-radius: 5px;
+        }
+
+        .comparison {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .comparison-item {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .comparison-item.old {
+            border-left: 5px solid #ff6b6b;
+        }
+
+        .comparison-item.new {
+            border-left: 5px solid #4af626;
+        }
+
+        .metric {
+            margin: 10px 0;
+        }
+
+        .metric-label {
+            color: #a0a0a0;
+            font-size: 0.9em;
+        }
+
+        .metric-value {
+            color: #4af626;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .code-snippet {
+            background: #0a0a0a;
+            border: 1px solid #4af626;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        .highlight {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .queue-visual {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .queue-slot {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #666;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+        }
+
+        .queue-slot.filled {
+            background: #4af626;
+            color: #0a0a0a;
+            border-color: #4af626;
+        }
+
+        .bottleneck {
+            background: #3a1a1a !important;
+            border-color: #ff6b6b !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 MetricStream: End-to-End Request Flow</h1>
+
+        <div class="toggle-container">
+            <button class="toggle-btn" onclick="toggleArchitecture()">
+                <span id="toggle-text">Show Phase 6 Architecture (Thread Pool)</span>
+            </button>
+        </div>
+
+        <!-- OLD ARCHITECTURE (Before Phase 6) -->
+        <div class="architecture old-arch active" id="old-arch">
+            <div class="architecture-title">⚠️ OLD ARCHITECTURE - Single-Threaded (Before Phase 6)</div>
+
+            <div class="flow-diagram">
+                <div class="client-section">
+                    <div class="section-title">👤 CLIENT SIDE</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">1</span>Client Sends HTTP Request</div>
+                        <div class="box-content">
+                            <div class="code-snippet">POST /metrics HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{"name":"cpu_usage","value":75.5}</div>
+                            <strong>TCP Handshake:</strong>
+                            <div style="margin-left: 20px; margin-top: 5px;">
+                                Client (IP: 192.168.1.5, Port: 54127) → Server (IP: 10.0.0.1, Port: 8080)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title">Kernel Listen Queue (Backlog = 128)</div>
+                        <div class="box-content">
+                            Connection enters kernel queue after TCP handshake completes
+                            <div class="queue-visual">
+                                <div class="queue-slot filled">C1</div>
+                                <div class="queue-slot filled">C2</div>
+                                <div class="queue-slot filled">C3</div>
+                                <div class="queue-slot">...</div>
+                                <div class="queue-slot"></div>
+                                <div class="queue-slot"></div>
+                            </div>
+                            <div style="margin-top: 10px; color: #ff6b6b;">
+                                ⚠️ <strong>BOTTLENECK:</strong> If accept() is slow, queue fills up!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="server-section">
+                    <div class="section-title">🖥️ SERVER SIDE - Main Thread (BLOCKING)</div>
+
+                    <div class="box bottleneck">
+                        <div class="box-title"><span class="step-number">2</span>accept() - Main Thread BLOCKS Here</div>
+                        <div class="box-content">
+                            <div class="code-snippet">int client_socket = <span class="highlight">accept</span>(server_fd, ...);</div>
+                            ⏳ Main thread waits for connection<br>
+                            ⏳ Only ONE connection processed at a time<br>
+                            ⏳ Other clients wait in kernel queue
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box bottleneck">
+                        <div class="box-title"><span class="step-number">3</span>Read HTTP Request - BLOCKING</div>
+                        <div class="box-content">
+                            <div class="code-snippet">ssize_t bytes = <span class="highlight">read</span>(client_socket, buffer, sizeof(buffer));</div>
+                            ⏳ Main thread blocks reading socket<br>
+                            ⏳ No other connections can be accepted
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box bottleneck">
+                        <div class="box-title"><span class="step-number">4</span>Rate Limiting Check - BLOCKING</div>
+                        <div class="box-content">
+                            <div class="code-snippet">if (!rateLimiter.allow(client_id)) {
+    send_429_response();
+}</div>
+                            ⏳ Lock mutex to check rate limits<br>
+                            ⏳ Update sliding window state
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box bottleneck">
+                        <div class="box-title"><span class="step-number">5</span>Parse JSON - BLOCKING</div>
+                        <div class="box-content">
+                            <div class="code-snippet">Metric metric = parseJSON(request_body);</div>
+                            ⏳ Parse and validate JSON<br>
+                            ⏳ Extract name, value, timestamp
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box bottleneck">
+                        <div class="box-title"><span class="step-number">6</span>Queue for Async I/O - BLOCKING</div>
+                        <div class="box-content">
+                            <div class="code-snippet">metricsQueue.push(metric);  // Lock mutex</div>
+                            ⏳ Lock mutex to add to queue<br>
+                            ⏳ Producer-consumer pattern
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">7</span>Send HTTP Response</div>
+                        <div class="box-content">
+                            <div class="code-snippet">write(client_socket, "HTTP/1.1 200 OK\r\n...");</div>
+                            ✅ Send success response to client
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">8</span>Close Connection</div>
+                        <div class="box-content">
+                            <div class="code-snippet">close(client_socket);</div>
+                            🔌 Close socket, free file descriptor<br>
+                            <strong>NOW main thread loops back to accept()</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="storage-section">
+                    <div class="section-title">💾 STORAGE - Background Writer Thread</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">9</span>Background Thread Writes to File</div>
+                        <div class="box-content">
+                            <div class="code-snippet">// Separate thread running continuously
+while (true) {
+    Metric m = metricsQueue.pop();  // Lock mutex
+    file << m.toJSON() << "\n";
+}</div>
+                            📝 Writes to metrics.jsonl<br>
+                            🔄 Runs independently of main thread
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↑</div>
+
+                <div class="client-section">
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">10</span>Client Receives Response</div>
+                        <div class="box-content">
+                            <div class="code-snippet">HTTP/1.1 200 OK
+
+Metric received</div>
+                            ✅ Client completes request
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison">
+                <h2 style="color: #ff6b6b; margin-bottom: 20px;">⚠️ PROBLEMS WITH OLD ARCHITECTURE</h2>
+                <div class="comparison-grid">
+                    <div class="comparison-item old">
+                        <h3 style="color: #ff6b6b;">Bottleneck</h3>
+                        <p>Main thread handles EVERYTHING sequentially:<br>
+                        accept() → read() → parse() → queue() → respond()</p>
+                        <p style="margin-top: 10px; color: #ff6b6b;">Only ONE client served at a time!</p>
+                    </div>
+                    <div class="comparison-item old">
+                        <h3 style="color: #ff6b6b;">Performance Impact</h3>
+                        <div class="metric">
+                            <div class="metric-label">100 concurrent clients:</div>
+                            <div class="metric-value" style="color: #ff6b6b;">80.2% success</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Average latency:</div>
+                            <div class="metric-value" style="color: #ff6b6b;">2.73ms</div>
+                        </div>
+                    </div>
+                    <div class="comparison-item old">
+                        <h3 style="color: #ff6b6b;">Queue Buildup</h3>
+                        <p>Kernel listen queue fills up fast<br>
+                        New connections get refused<br>
+                        Client sees "Connection refused" errors</p>
+                    </div>
+                    <div class="comparison-item old">
+                        <h3 style="color: #ff6b6b;">CPU Underutilization</h3>
+                        <p>Multi-core CPU sits mostly idle<br>
+                        One thread can't saturate modern hardware<br>
+                        Wasted potential!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <h3 style="color: #4af626; margin-bottom: 15px;">Timeline for 3 Concurrent Requests (Old):</h3>
+                <div class="timeline-item">
+                    <div class="timeline-time">0ms</div>
+                    <div class="timeline-content">Client 1 connects → accept()</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">5ms</div>
+                    <div class="timeline-content">Client 1: read() + parse() + queue() + respond()</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">10ms</div>
+                    <div class="timeline-content">Client 2 connects → accept() ⏳ (Client 3 waits in kernel queue)</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">15ms</div>
+                    <div class="timeline-content">Client 2: read() + parse() + queue() + respond()</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20ms</div>
+                    <div class="timeline-content">Client 3 connects → accept()</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">25ms</div>
+                    <div class="timeline-content">Client 3: read() + parse() + queue() + respond()</div>
+                </div>
+                <div style="margin-top: 15px; color: #ff6b6b; font-weight: bold;">
+                    ⚠️ Total time: 25ms for 3 clients (SEQUENTIAL)
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW ARCHITECTURE (Phase 6 - Thread Pool) -->
+        <div class="architecture new-arch" id="new-arch">
+            <div class="architecture-title">✅ NEW ARCHITECTURE - Thread Pool (Phase 6)</div>
+
+            <div class="flow-diagram">
+                <div class="client-section">
+                    <div class="section-title">👤 CLIENT SIDE</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">1</span>Client Sends HTTP Request</div>
+                        <div class="box-content">
+                            <div class="code-snippet">POST /metrics HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+
+{"name":"cpu_usage","value":75.5}</div>
+                            <strong>TCP Handshake:</strong>
+                            <div style="margin-left: 20px; margin-top: 5px;">
+                                Client (IP: 192.168.1.5, Port: 54127) → Server (IP: 10.0.0.1, Port: 8080)
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title">Kernel Listen Queue (Backlog = 128)</div>
+                        <div class="box-content">
+                            Connection enters kernel queue after TCP handshake completes
+                            <div class="queue-visual">
+                                <div class="queue-slot filled">C1</div>
+                                <div class="queue-slot filled">C2</div>
+                                <div class="queue-slot">...</div>
+                                <div class="queue-slot"></div>
+                                <div class="queue-slot"></div>
+                                <div class="queue-slot"></div>
+                            </div>
+                            <div style="margin-top: 10px; color: #4af626;">
+                                ✅ Queue drains FAST - accept loop is non-blocking!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="server-section">
+                    <div class="section-title">🖥️ SERVER SIDE - Accept Loop (DEDICATED THREAD)</div>
+
+                    <div class="box" style="border-color: #4af626;">
+                        <div class="box-title"><span class="step-number">2</span>accept() - Fast Accept Loop</div>
+                        <div class="box-content">
+                            <div class="code-snippet">// Dedicated accept thread - ONLY does accept()!
+while (true) {
+    int client_socket = <span class="highlight">accept</span>(server_fd, ...);
+    threadPool.submit(client_socket);  // Hand off immediately
+}</div>
+                            ⚡ Accept loop runs continuously<br>
+                            ⚡ Does NOTHING else - just accept() and delegate<br>
+                            ⚡ Drains kernel queue extremely fast
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box" style="border-color: #4af626;">
+                        <div class="box-title"><span class="step-number">3</span>Thread Pool - Parallel Processing</div>
+                        <div class="box-content">
+                            <div class="code-snippet">// Worker threads pick up tasks from queue
+threadPool.submit([client_socket]() {
+    handleClient(client_socket);
+});</div>
+                            <strong>Thread Pool Workers:</strong>
+                            <div class="thread-pool">
+                                <div class="worker-thread active">
+                                    Thread 1<br>
+                                    🔄 Client A
+                                </div>
+                                <div class="worker-thread active">
+                                    Thread 2<br>
+                                    🔄 Client B
+                                </div>
+                                <div class="worker-thread active">
+                                    Thread 3<br>
+                                    🔄 Client C
+                                </div>
+                                <div class="worker-thread active">
+                                    Thread 4<br>
+                                    🔄 Client D
+                                </div>
+                                <div class="worker-thread active">
+                                    Thread 5<br>
+                                    🔄 Client E
+                                </div>
+                                <div class="worker-thread active">
+                                    Thread 6<br>
+                                    🔄 Client F
+                                </div>
+                                <div class="worker-thread">
+                                    Thread 7<br>
+                                    💤 Idle
+                                </div>
+                                <div class="worker-thread">
+                                    Thread 8<br>
+                                    💤 Idle
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; color: #4af626;">
+                                ✅ Multiple clients processed SIMULTANEOUSLY!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">4</span>Worker Thread: Read HTTP Request</div>
+                        <div class="box-content">
+                            <div class="code-snippet">ssize_t bytes = <span class="highlight">read</span>(client_socket, buffer, sizeof(buffer));</div>
+                            📖 Each worker handles ONE client end-to-end<br>
+                            🔄 Other workers handle other clients in parallel
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">5</span>Worker Thread: Rate Limiting Check</div>
+                        <div class="box-content">
+                            <div class="code-snippet">if (!rateLimiter.allow(client_id)) {
+    send_429_response();
+}</div>
+                            🔒 Lock only during rate limit check<br>
+                            ⚡ Other workers can proceed with different clients
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">6</span>Worker Thread: Parse JSON</div>
+                        <div class="box-content">
+                            <div class="code-snippet">Metric metric = parseJSON(request_body);</div>
+                            🔧 Parse and validate JSON<br>
+                            ⚡ No blocking - each worker independent
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">7</span>Worker Thread: Queue for Async I/O</div>
+                        <div class="box-content">
+                            <div class="code-snippet">metricsQueue.push(metric);  // Brief lock</div>
+                            🔒 Lock mutex briefly to add to queue<br>
+                            ⚡ Producer-consumer pattern
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">8</span>Worker Thread: Send HTTP Response</div>
+                        <div class="box-content">
+                            <div class="code-snippet">write(client_socket, "HTTP/1.1 200 OK\r\n...");</div>
+                            ✅ Send success response to client
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">9</span>Worker Thread: Close Connection</div>
+                        <div class="box-content">
+                            <div class="code-snippet">close(client_socket);</div>
+                            🔌 Close socket, free file descriptor<br>
+                            <strong>Worker returns to pool, ready for next task</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↓</div>
+
+                <div class="storage-section">
+                    <div class="section-title">💾 STORAGE - Background Writer Thread</div>
+
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">10</span>Background Thread Writes to File</div>
+                        <div class="box-content">
+                            <div class="code-snippet">// Separate thread running continuously
+while (true) {
+    Metric m = metricsQueue.pop();  // Lock mutex
+    file << m.toJSON() << "\n";
+}</div>
+                            📝 Writes to metrics.jsonl<br>
+                            🔄 Runs independently of accept loop and workers
+                        </div>
+                    </div>
+                </div>
+
+                <div class="arrow">↑</div>
+
+                <div class="client-section">
+                    <div class="box">
+                        <div class="box-title"><span class="step-number">11</span>Client Receives Response</div>
+                        <div class="box-content">
+                            <div class="code-snippet">HTTP/1.1 200 OK
+
+Metric received</div>
+                            ✅ Client completes request
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison">
+                <h2 style="color: #4af626; margin-bottom: 20px;">✅ IMPROVEMENTS WITH THREAD POOL</h2>
+                <div class="comparison-grid">
+                    <div class="comparison-item new">
+                        <h3 style="color: #4af626;">Fast Accept Loop</h3>
+                        <p>Dedicated thread ONLY does accept()<br>
+                        Immediately delegates to thread pool<br>
+                        Drains kernel queue at maximum speed</p>
+                        <p style="margin-top: 10px; color: #4af626;">No more queue buildup!</p>
+                    </div>
+                    <div class="comparison-item new">
+                        <h3 style="color: #4af626;">Parallel Processing</h3>
+                        <p>8 worker threads handle clients simultaneously<br>
+                        Each client gets end-to-end dedicated handling<br>
+                        CPU cores fully utilized</p>
+                    </div>
+                    <div class="comparison-item new">
+                        <h3 style="color: #4af626;">Performance Gains</h3>
+                        <div class="metric">
+                            <div class="metric-label">100 concurrent clients:</div>
+                            <div class="metric-value">99.5%+ success</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Latency improvement:</div>
+                            <div class="metric-value">60% reduction</div>
+                        </div>
+                    </div>
+                    <div class="comparison-item new">
+                        <h3 style="color: #4af626;">Scalability</h3>
+                        <p>Handles bursts gracefully<br>
+                        Thread pool adapts to load<br>
+                        Clean separation of concerns</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <h3 style="color: #4af626; margin-bottom: 15px;">Timeline for 3 Concurrent Requests (New):</h3>
+                <div class="timeline-item">
+                    <div class="timeline-time">0ms</div>
+                    <div class="timeline-content">
+                        Accept Loop: Client 1 → accept() → submit to pool<br>
+                        Worker Thread 1: Starts handling Client 1
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">0.1ms</div>
+                    <div class="timeline-content">
+                        Accept Loop: Client 2 → accept() → submit to pool<br>
+                        Worker Thread 2: Starts handling Client 2<br>
+                        <span style="color: #4af626;">✅ Client 1 still processing in parallel!</span>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">0.2ms</div>
+                    <div class="timeline-content">
+                        Accept Loop: Client 3 → accept() → submit to pool<br>
+                        Worker Thread 3: Starts handling Client 3<br>
+                        <span style="color: #4af626;">✅ Clients 1 & 2 still processing in parallel!</span>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">5ms</div>
+                    <div class="timeline-content">
+                        All 3 clients complete nearly simultaneously
+                    </div>
+                </div>
+                <div style="margin-top: 15px; color: #4af626; font-weight: bold;">
+                    ✅ Total time: ~5ms for 3 clients (PARALLEL) - 5x faster!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let showingOld = true;
+
+        function toggleArchitecture() {
+            const oldArch = document.getElementById('old-arch');
+            const newArch = document.getElementById('new-arch');
+            const toggleText = document.getElementById('toggle-text');
+
+            if (showingOld) {
+                oldArch.classList.remove('active');
+                newArch.classList.add('active');
+                toggleText.textContent = 'Show Old Architecture (Single-Threaded)';
+                showingOld = false;
+            } else {
+                newArch.classList.remove('active');
+                oldArch.classList.add('active');
+                toggleText.textContent = 'Show Phase 6 Architecture (Thread Pool)';
+                showingOld = true;
+            }
+        }
+
+        // Add some interactivity to worker threads
+        document.addEventListener('DOMContentLoaded', () => {
+            const workers = document.querySelectorAll('.worker-thread.active');
+            workers.forEach((worker, index) => {
+                setInterval(() => {
+                    worker.style.opacity = Math.random() > 0.5 ? '1' : '0.7';
+                }, 500 + index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

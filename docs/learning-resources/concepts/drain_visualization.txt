@@ -1,0 +1,187 @@
+================================================================================
+THE EXACT MOMENT OF "DRAINING" - Frame by Frame
+================================================================================
+
+FRAME 1: Three clients connect, complete TCP handshake
+────────────────────────────────────────────────────────────────
+
+    CLIENT 1          CLIENT 2          CLIENT 3
+    (Port 54127)      (Port 54128)      (Port 54129)
+         │                 │                 │
+         └─────────────────┼─────────────────┘
+                           │ SYN + SYN-ACK + ACK
+                           ↓
+    ┌──────────────────────────────────────────────────────┐
+    │              KERNEL SPACE                            │
+    │                                                      │
+    │  Listen Queue (backlog=1024):                       │
+    │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+    │  │  C1      │ │  C2      │ │  C3      │  [empty]   │
+    │  │ 54127    │ │ 54128    │ │ 54129    │            │
+    │  └──────────┘ └──────────┘ └──────────┘            │
+    │       ↑            ↑            ↑                   │
+    │       └────────────┴────────────┘                   │
+    │         Waiting for accept()                        │
+    └──────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────────────┐
+    │         APPLICATION SPACE (MetricStream)             │
+    │                                                      │
+    │  Accept Loop Thread:                                │
+    │      while (running) {                              │
+    │    →     int fd = accept(server_fd, ...); ← BLOCKS  │
+    │          thread_pool.enqueue(...);                  │
+    │      }                                               │
+    │                                                      │
+    │  File Descriptors: (none yet)                       │
+    │  Thread Pool: [idle] [idle] [idle] ...             │
+    └──────────────────────────────────────────────────────┘
+
+
+FRAME 2: accept() system call executes - THE DRAIN HAPPENS!
+────────────────────────────────────────────────────────────────
+
+    ┌──────────────────────────────────────────────────────┐
+    │              KERNEL SPACE                            │
+    │                                                      │
+    │  Listen Queue:                                      │
+    │  ┌ ─ ─ ─ ─ ┐ ┌──────────┐ ┌──────────┐            │
+    │     C1 MOVED │  C2      │ │  C3      │  [empty]   │
+    │  │ (draining)│ │ 54128    │ │ 54129    │            │
+    │   ─ ─ ─ ─ ─ ┘ └──────────┘ └──────────┘            │
+    │       │                                             │
+    │       │ accept() moves it ↓                         │
+    │       ↓                                             │
+    │  Active Socket:                                     │
+    │  ┌──────────────────────────┐                      │
+    │  │ Socket for C1 (54127)    │                      │
+    │  │ - 4-tuple stored         │                      │
+    │  │ - Receive buffer ready   │                      │
+    │  │ - Send buffer ready      │                      │
+    │  └──────────────────────────┘                      │
+    │              │                                      │
+    │              │ fd=5 points here                     │
+    └──────────────┼──────────────────────────────────────┘
+                   │
+                   ↓
+    ┌──────────────┼──────────────────────────────────────┐
+    │         APPLICATION SPACE                      │     │
+    │                                                │     │
+    │  Accept Loop Thread:                          │     │
+    │      while (running) {                        │     │
+    │          int fd = accept(...); ← RETURNED 5 ──┘     │
+    │    →     thread_pool.enqueue([fd=5]() {...});       │
+    │      }                                               │
+    │                                                      │
+    │  File Descriptors:                                  │
+    │      fd 5 → Socket for C1 (54127) ← NEW!           │
+    │                                                      │
+    │  Thread Pool Queue:                                 │
+    │      [Task: handle fd=5] ← QUEUED!                 │
+    └──────────────────────────────────────────────────────┘
+
+    ⚡ DRAIN COMPLETE! C1 moved from kernel queue → app control
+    ⏱️  Time taken: ~0.1ms
+
+
+FRAME 3: Accept loop immediately goes back for more!
+────────────────────────────────────────────────────────────────
+
+    ┌──────────────────────────────────────────────────────┐
+    │              KERNEL SPACE                            │
+    │                                                      │
+    │  Listen Queue:                                      │
+    │  ┌ ─ ─ ─ ─ ┐ ┌──────────┐                          │
+    │     C2 MOVING│  C3      │  [empty] [empty]         │
+    │  │(draining)│ │ 54129    │                          │
+    │   ─ ─ ─ ─ ─ ┘ └──────────┘                          │
+    │       │                                             │
+    │       ↓ accept() draining next one                  │
+    │  Active Sockets:                                    │
+    │  [C1: fd=5]  [C2: fd=6] ← NEW                      │
+    └──────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────────────┐
+    │         APPLICATION SPACE                            │
+    │                                                      │
+    │  Accept Loop: FAST!                                 │
+    │      int fd = accept(...); ← Got fd=6               │
+    │      thread_pool.enqueue([fd=6]() {...});           │
+    │                                                      │
+    │  File Descriptors:                                  │
+    │      fd 5 → C1                                      │
+    │      fd 6 → C2 ← NEW!                               │
+    │                                                      │
+    │  Thread Pool:                                       │
+    │      Worker 1: [processing fd=5] ← PARALLEL         │
+    │      Queue: [Task: handle fd=6]                     │
+    └──────────────────────────────────────────────────────┘
+
+    ⚡ Two drains in ~0.2ms! C1 being processed, C2 queued
+
+
+FRAME 4: Steady state - draining faster than processing
+────────────────────────────────────────────────────────────────
+
+    ┌──────────────────────────────────────────────────────┐
+    │              KERNEL SPACE                            │
+    │                                                      │
+    │  Listen Queue:                                      │
+    │  [empty] [empty] [empty] ... ← STAYING EMPTY!       │
+    │                                                      │
+    │  Active Sockets (owned by app):                     │
+    │  [C1:fd=5] [C2:fd=6] [C3:fd=7] [C4:fd=8] ...       │
+    └──────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────────────┐
+    │         APPLICATION SPACE                            │
+    │                                                      │
+    │  Accept Loop:                                       │
+    │      Draining at ~10,000 connections/sec            │
+    │      Loop time: ~0.1ms per connection               │
+    │                                                      │
+    │  Thread Pool (8 workers):                           │
+    │      Worker 1: [processing C1] ← 5ms total          │
+    │      Worker 2: [processing C2]                      │
+    │      Worker 3: [processing C3]                      │
+    │      Worker 4: [processing C4]                      │
+    │      Worker 5: [processing C5]                      │
+    │      Worker 6: [processing C6]                      │
+    │      Worker 7: [processing C7]                      │
+    │      Worker 8: [processing C8]                      │
+    │                                                      │
+    │  Pool Queue: [C9] [C10] [C11] ... (waiting)        │
+    └──────────────────────────────────────────────────────┘
+
+    ✓ Kernel queue stays empty (drained fast)
+    ✓ Thread pool queue builds up slightly (processing slower)
+    ✓ But thread pool queue is MUCH bigger and in our control!
+
+
+THE KEY INSIGHT
+═══════════════
+
+Draining = accept() system call transferring ownership
+
+    BEFORE:  Connection in kernel queue (limited space, OS controlled)
+    AFTER:   Connection as file descriptor (our space, we control)
+
+Old Architecture:
+    accept() → [block 5ms processing] → accept() → [block 5ms] ...
+    Drain rate: 200/sec
+    Kernel queue fills up!
+
+New Architecture:
+    accept() → [enqueue 0.1ms] → accept() → [enqueue 0.1ms] ...
+    Drain rate: 10,000/sec
+    Kernel queue stays empty!
+
+The connections go from:
+    Kernel's limited waiting room → Our flexible processing queue
+
+We moved the bottleneck from:
+    Fixed kernel queue (128-1024) → Dynamic thread pool queue (unlimited*)
+    
+And we process in parallel instead of sequentially!
+
+================================================================================

@@ -1,0 +1,142 @@
+================================================================================
+HOW MULTIPLE CONNECTIONS WORK ON ONE PORT
+================================================================================
+
+THE CONNECTION 4-TUPLE
+---------------------
+Each TCP connection is uniquely identified by 4 pieces of information:
+
+    Client Side                    Server Side
+    ┌──────────────┐              ┌──────────────┐
+    │ 192.168.1.5  │              │ 10.0.0.1     │ Source IP
+    │ Port 54127   │─────────────→│ Port 8080    │ Destination IP
+    └──────────────┘              └──────────────┘ Source Port
+                                                   Destination Port
+
+    Connection ID: (192.168.1.5:54127 → 10.0.0.1:8080)
+
+
+MULTIPLE CLIENTS, ONE SERVER PORT
+----------------------------------
+
+Server listens on port 8080:
+
+    Client 1                      Client 2                      Client 3
+    IP: 192.168.1.5              IP: 192.168.1.6              IP: 192.168.1.7
+    Port: 54127                  Port: 41234                  Port: 39281
+         │                            │                            │
+         └────────────────────────────┼────────────────────────────┘
+                                      │
+                                      ▼
+                              Server Port 8080
+                              (One listening socket)
+
+    Three DIFFERENT connections:
+    1. (192.168.1.5:54127 → 10.0.0.1:8080)
+    2. (192.168.1.6:41234 → 10.0.0.1:8080)
+    3. (192.168.1.7:39281 → 10.0.0.1:8080)
+
+Each has a different 4-tuple, so the kernel can distinguish them!
+
+
+WHAT'S IN THE LISTEN QUEUE?
+----------------------------
+
+The listen queue (backlog) stores connections that have completed the TCP
+handshake but haven't been accept()'ed yet.
+
+NOT stored: The actual HTTP request data (that goes in socket buffers)
+STORED: Connection metadata (4-tuple, TCP state, sequence numbers)
+
+
+Timeline:
+---------
+
+1. Client sends SYN
+   └─→ Kernel receives it, connection enters "SYN queue" (not the listen queue yet)
+
+2. Kernel sends SYN-ACK back to client
+   └─→ Connection is half-open
+
+3. Client sends ACK (TCP handshake complete)
+   └─→ Connection moves to "listen queue" (accept queue)
+   └─→ Connection is ESTABLISHED but application hasn't called accept() yet
+
+4. Application calls accept()
+   └─→ Kernel removes connection from listen queue
+   └─→ Returns a new file descriptor for this specific connection
+   └─→ Now the application can read/write data on this connection
+
+
+WHAT GETS STORED?
+-----------------
+
+In the LISTEN QUEUE (per connection, ~1-2KB):
+  - Source IP and port (client)
+  - Destination IP and port (server)
+  - TCP sequence numbers
+  - TCP window size
+  - TCP options negotiated
+  - Pointer to socket buffer (for incoming data)
+
+In SOCKET BUFFERS (separate, configurable size):
+  - Actual data sent by client (HTTP request, etc.)
+  - Incoming: receive buffer (SO_RCVBUF)
+  - Outgoing: send buffer (SO_SNDBUF)
+
+
+ANALOGY
+-------
+
+Listen Queue = Restaurant waiting area (limited seats)
+  - People who arrived and are waiting to be seated
+  - Small capacity (backlog = 128 means 128 waiting)
+
+accept() = Hostess calling "next party"
+  - Moves people from waiting area to a table
+  - Each table (file descriptor) is independent
+
+Socket Buffers = The actual table space
+  - Where the meal (data) is served
+  - Much larger capacity
+
+
+WHY CAN'T BACKLOG BE 1 MILLION?
+--------------------------------
+
+1. Memory: 1M × 1.5KB = ~1.5GB of kernel memory
+2. Management overhead: Kernel must scan queue for operations
+3. Wrong solution: If you can't accept() fast enough, increase accept() speed
+4. Security: Large queues = easier SYN flood attacks
+
+
+IN OUR METRICSTREAM SERVER
+---------------------------
+
+Phase 6 (Thread Pool) improved our accept() speed:
+  - Old: Main thread handles accept() + processing
+  - New: Accept loop runs continuously, delegates work to thread pool
+  - Result: Drain the listen queue FASTER instead of making it bigger
+
+The bottleneck isn't queue size - it's how fast you process connections!
+
+
+MEASURING CONNECTIONS
+---------------------
+
+See active connections:
+    netstat -an | grep 8080
+    lsof -i :8080
+
+Each line shows a unique 4-tuple = one connection
+
+Example output:
+    tcp4  0  0  10.0.0.1.8080     192.168.1.5.54127    ESTABLISHED
+    tcp4  0  0  10.0.0.1.8080     192.168.1.6.41234    ESTABLISHED
+    tcp4  0  0  10.0.0.1.8080     192.168.1.7.39281    ESTABLISHED
+    tcp4  0  0  *.8080            *.*                  LISTEN
+
+The LISTEN entry = your server's listening socket
+The ESTABLISHED entries = active connections (each with different client port)
+
+================================================================================
