@@ -627,6 +627,46 @@
         <div class="content-panel active" id="overview">
             <h2>🎯 Learning Journey Overview</h2>
 
+            <div class="lab-section" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border: none; margin-bottom: 30px;">
+                <h3 style="color: #fff; margin-bottom: 15px;">🚀 Quick Start (2 minutes)</h3>
+
+                <div style="background: rgba(255,255,255,0.95); border-radius: 8px; padding: 20px; color: #2c3e50;">
+                    <h4 style="color: #27ae60; margin-bottom: 15px;">Step 1: Fork & Clone</h4>
+                    <div class="command" style="background: #2c3e50; color: #ecf0f1; margin-bottom: 10px;">
+# Fork the repository on GitHub first:
+# https://github.com/kapil0x/systems-craft
+
+# Then clone YOUR fork
+$ git clone https://github.com/YOUR_USERNAME/systems-craft.git
+$ cd systems-craft</div>
+
+                    <h4 style="color: #27ae60; margin-top: 20px; margin-bottom: 15px;">Step 2: Build & Run</h4>
+                    <div class="command" style="background: #2c3e50; color: #ecf0f1; margin-bottom: 10px;">
+# Build the complete Phase 7 version
+$ mkdir -p build
+$ cmake -B build
+$ make -C build metricstream_server load_test
+
+# Run the server
+$ ./build/metricstream_server
+
+# In another terminal, run a load test
+$ ./build/load_test 8080 20 10</div>
+
+                    <h4 style="color: #27ae60; margin-top: 20px; margin-bottom: 15px;">Step 3: Start Learning</h4>
+                    <p style="color: #34495e; margin-bottom: 10px;">Choose your path:</p>
+                    <ul style="color: #34495e; margin-left: 20px; line-height: 1.8;">
+                        <li><strong>Guided Learning:</strong> Click "Phase 1" above to start the tutorial</li>
+                        <li><strong>Hands-On Practice:</strong> Checkout <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">git checkout phase-1-starter</code> and implement yourself</li>
+                        <li><strong>Code Review:</strong> Read the solution branches to understand each optimization</li>
+                    </ul>
+                </div>
+
+                <p style="color: #fff; margin-top: 15px; font-size: 0.9em; opacity: 0.9;">
+                    💡 <strong>Pro Tip:</strong> Fork the repo so you can commit your own implementations as you work through each phase!
+                </p>
+            </div>
+
             <div class="info-box">
                 <h3>What is this?</h3>
                 <p>A hands-on tutorial for building a metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge. This is educational code to learn systems programming concepts—not production-ready software.</p>
