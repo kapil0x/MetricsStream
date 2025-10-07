@@ -4,7 +4,7 @@ Guidance for Claude Code when working with this codebase.
 
 ## Project Overview
 
-MetricStream - A comprehensive metrics platform (like Prometheus/DataDog) built from first principles. Currently implementing the ingestion service component, with focus on performance optimization and concurrent programming. This is one component of a larger distributed metrics system.
+Systems Craft - A learning platform for building high-performance systems from first principles. The project implements a production-grade metrics ingestion service (like Prometheus/DataDog) with focus on performance optimization and concurrent programming. This hands-on approach teaches systems engineering through 7 progressive optimization phases.
 
 ## Approach
 

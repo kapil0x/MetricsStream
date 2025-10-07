@@ -1,6 +1,6 @@
-# MetricStream
+# Systems Craft
 
-A comprehensive metrics platform built from first principles - like Prometheus or DataDog, but designed for learning the underlying engineering. **Phase 1 (Ingestion Service) is fully implemented and optimized.** The complete system architecture is designed with detailed capacity planning and technology decisions documented in `/docs`.
+**Building high-performance systems from first principles.** A hands-on learning platform where you build a production-grade metrics ingestion service (like Prometheus or DataDog) from scratch. **Phase 1 (Ingestion Service) is fully implemented with 7 progressive optimization phases.** Complete system architecture, capacity planning, and design decisions documented in `/docs`.
 
 ## Architecture Overview
 
