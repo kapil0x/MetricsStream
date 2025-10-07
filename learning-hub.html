@@ -848,7 +848,7 @@ cmake .. && make
                     <div class="phase-badge">46-51%</div>
                 </div>
                 <div class="phase-description">
-                    Fixed worker threads. Amortizes thread creation cost (500μs) across thousands of requests. Revealed listen backlog bottleneck.
+                    Fixed worker threads. Amortizes thread creation overhead across thousands of requests. Revealed listen backlog bottleneck.
                 </div>
                 <div class="phase-stats">
                     <div class="stat-item">
@@ -1866,7 +1866,7 @@ bool allow_request(const string& client_id) {
                     <ul>
                         <li>✅ Simple implementation</li>
                         <li>✅ True parallelism</li>
-                        <li>❌ Thread creation overhead (500μs)</li>
+                        <li>❌ Thread creation overhead (measured 2.05ms total latency)</li>
                         <li>❌ Resource exhaustion at scale</li>
                     </ul>
                 `
@@ -1966,9 +1966,9 @@ read_index.store(w, memory_order_release);</code></pre>
                 title: "Thread Pool (Phase 6)",
                 description: "Replace thread-per-request with fixed worker pool",
                 content: `
-                    <h4>The Revelation</h4>
-                    <p>Profiling showed: <strong>Thread creation (500μs) >> Request processing (5μs)</strong></p>
-                    <p>100x overhead from threading model!</p>
+                    <h4>The Bottleneck Discovery</h4>
+                    <p>Testing revealed: <strong>Total latency with thread-per-request: 2.05ms</strong></p>
+                    <p>This high overhead came from thread creation and context switching for every request.</p>
 
                     <h4>Thread Pool Design</h4>
                     <pre><code>class ThreadPool {
@@ -2067,9 +2067,10 @@ perf script | flamegraph.pl > flame.svg</code></pre>
 
                     <h4>What We Discovered</h4>
                     <ul>
-                        <li>Thread creation: 500μs (100x overhead!)</li>
+                        <li>TCP connection establishment: 1-2ms overhead per request</li>
+                        <li>Thread-per-request model: 2.05ms total latency</li>
                         <li>Mutex contention in rate limiting</li>
-                        <li>JSON parsing CPU hotspot</li>
+                        <li>JSON parsing CPU hotspot (optimized from O(n²) to O(n))</li>
                     </ul>
                 `
             },
