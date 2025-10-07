@@ -1274,16 +1274,23 @@ Resource Usage: 45% CPU, 150MB memory</div>
                 </div>
 
                 <h5>Step 1: Setup Your Workspace</h5>
+                <div class="warning-box">
+                    <h5>📝 Important Note About This Exercise</h5>
+                    <p><strong>The current codebase has ALL 7 phases implemented.</strong> This means:</p>
+                    <ul>
+                        <li>✅ You CAN build and run the system to see the final result (100% success rate, 2,253 RPS)</li>
+                        <li>✅ You CAN read the Phase 1 code concepts below to understand thread-per-request pattern</li>
+                        <li>❌ You CANNOT see the Phase 1-only performance (85-90% success) since the code includes Phases 2-7 optimizations</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><strong>To truly practice Phase 1:</strong> You would need to checkout an earlier git commit or create a simplified version from scratch following the code examples below.</p>
+                </div>
+
                 <div class="command">$ cd /path/to/metricstream
 
-# Note: The current main branch has all phases (1-7) implemented.
-# To learn Phase 1, you can:
-# Option A: Read the solution below and understand the concepts
-# Option B: Create a simplified version from scratch following the code samples
-
-# Build the current (complete) version to see the final result
-$ mkdir -p build && cd build
-$ cmake .. && make metricstream_server</div>
+# Build the current (Phase 7) version
+$ mkdir -p build
+$ cmake -B build
+$ make -C build metricstream_server</div>
 
                 <h5>Step 2: Understand Current vs. Phase 1 Code</h5>
                 <p><strong>Note:</strong> The current codebase (main branch) has the complete Phase 7 implementation with thread pools and HTTP Keep-Alive. To understand Phase 1, we'll show you what the sequential baseline looked like, and what the Phase 1 threaded version would be.</p>
@@ -1440,17 +1447,18 @@ std::<span class="function">thread</span>([<span class="keyword">this</span>, cl
                 <h5>Step 7: Build and Run the Current System</h5>
                 <p><strong>Note:</strong> These commands build the complete Phase 7 system (all optimizations included).</p>
                 <div class="command"># From the project root
-$ mkdir -p build && cd build
-$ cmake .. && make metricstream_server
+$ mkdir -p build
+$ cmake -B build
+$ make -C build metricstream_server
 
-# Run the server
-$ ./metricstream_server
+# Run the server (in background or separate terminal)
+$ ./build/metricstream_server
 
 # Expected output:
 Starting MetricStream server on port 8080
+[ThreadPool] Started with 16 workers, max queue size: 10000
 HTTP server started on port 8080
-Ingestion service started
-[ThreadPool] Started with 16 workers, max queue size: 10000</div>
+Ingestion service started</div>
 
                 <h5>Step 8: Verify with curl (Single Request)</h5>
                 <div class="command"># In a new terminal
@@ -1460,23 +1468,36 @@ $ curl -X POST http://localhost:8080/metrics \
   -d '{"metrics":[{"timestamp":"2025-01-01T12:00:00Z","name":"cpu_usage","value":75.5,"type":"gauge"}]}'
 
 # Expected output:
-{"status":"success","message":"Metrics received"}</div>
+{"success":true,"metrics_processed":1}</div>
 
                 <h5>Step 9: Load Test (Multiple Concurrent Requests)</h5>
-                <div class="command">$ cd build
-$ make load_test  # Build the load test tool
-$ ./load_test 8080 20 10
+                <div class="command"># Build the load test tool
+$ make -C build load_test
 
-# Expected output (Phase 7 performance):
-Testing with 20 clients, 10 requests each (200 total requests)...
-Success Rate: 100.00%
-Avg Latency: 0.3-0.5ms
+# Run load test (20 clients, 10 requests each)
+$ ./build/load_test 8080 20 10
+
+# Expected output (Phase 7 with all optimizations):
+MetricStream Load Test
+Target: 127.0.0.1:8080
+Clients: 20
+Requests per client: 10
+Expected total requests: 200
+
+=== Load Test Statistics ===
+Duration: 1 seconds
 Total Requests: 200
 Successful: 200
+Failed: 0
+Success Rate: 100.00%
+Requests/sec: 200.00
+Avg Latency: 0.07 ms
+=========================
 
 # Note: Phase 1 (thread-per-request only) would show:
 # Success Rate: 85-90% at this load
-# Avg Latency: 0.8-1.5ms</div>
+# Avg Latency: 0.8-1.5ms
+# But you're running Phase 7, so you'll see 100% success!</div>
 
                 <div class="success-box">
                     <h5>✅ Success Criteria</h5>
@@ -1495,21 +1516,22 @@ Successful: 200
                 <p><strong>Goal:</strong> Understand when thread-per-request starts to break down.</p>
 
                 <h5>Test Different Client Counts</h5>
-                <div class="command"># Light load (should be near 100%)
+                <div class="command"># Light load
 $ ./build/load_test 8080 10 10
-Success Rate: ?
 
-# Medium load (target: 85-90%)
+# Medium load
 $ ./build/load_test 8080 20 10
-Success Rate: ?
 
-# Heavy load (performance degrades)
+# Heavy load
 $ ./build/load_test 8080 50 10
-Success Rate: ?
 
-# Extreme load (system limits hit)
+# Extreme load
 $ ./build/load_test 8080 100 10
-Success Rate: ?</div>
+
+# With Phase 7 optimizations, you should see:
+# - 100% success rate at all levels
+# - Latency increases slightly: 0.1ms → 0.5ms → 1.0ms → 1.5ms
+# - System handles 100 concurrent clients without dropping requests</div>
 
                 <h5>Record Your Results</h5>
                 <table class="metrics-table">
@@ -2942,7 +2964,7 @@ Backlog: 1024 (handles 100 simultaneous)</pre>
             <h4 style="margin-top: 20px;">Additional Resources</h4>
             <div class="info-box">
                 <ul>
-                    <li><a href="phase7_keep_alive_results.md" target="_blank" style="color: #f39c12;">Phase 7 Detailed Results</a> - Complete performance analysis and test methodology</li>
+                    <li><a href="docs/phase7_keep_alive_results.md" target="_blank" style="color: #f39c12;">Phase 7 Detailed Results</a> - Complete performance analysis and test methodology</li>
                     <li><a href="learning-resources/concepts/connection_explained.txt" target="_blank" style="color: #f39c12;">TCP Connection Mechanics</a> - Deep dive into kernel listen queues and connection draining</li>
                 </ul>
             </div>
@@ -3012,7 +3034,7 @@ Backlog: 1024 (handles 100 simultaneous)</pre>
             </p>
             <div class="info-box">
                 <p><strong>Decision tree visualization will be embedded here.</strong></p>
-                <p>For now, view it separately at: <a href="index.html" target="_blank">Decision Tree Visualization</a></p>
+                <p>For now, view it separately at: <a href="docs/index.html" target="_blank">Decision Tree Visualization</a></p>
             </div>
         </div>
 
