@@ -669,7 +669,13 @@ $ ./build/load_test 8080 20 10</div>
 
             <div class="info-box">
                 <h3>What is this?</h3>
-                <p>A hands-on tutorial for building a metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge. This is educational code to learn systems programming concepts—not production-ready software.</p>
+                <p>A hands-on tutorial for building a metrics ingestion system from scratch. You'll write the code, run performance tests, and see real bottlenecks emerge—just like working on infrastructure teams at companies like Google, Meta, Amazon, or Netflix.</p>
+
+                <div style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
+                    <p style="color: #fff; margin: 0; line-height: 1.7;">
+                        <strong style="color: #f1c40f;">💼 Real-World Engineering:</strong> This mirrors how infrastructure is built at Big Tech companies. Engineers don't use frameworks—they build custom solutions optimized for their specific scale and requirements. You'll learn the same systematic approach: measure bottlenecks, design solutions, implement optimizations, and validate with metrics.
+                    </p>
+                </div>
             </div>
 
             <div class="warning-box" style="margin-top: 20px;">
@@ -700,123 +706,147 @@ $ ./build/load_test 8080 20 10</div>
                 <p style="margin-top: 10px;"><strong>Note:</strong> Production deployments on AWS c5.2xlarge showed 15-20% higher throughput due to more cores and better I/O. Your results will vary based on hardware.</p>
             </div>
 
-            <h3>The Complete System (Phase 0 Design)</h3>
+            <h3>🎨 Systems Craft Series</h3>
 
-            <div style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border-radius: 15px; padding: 25px; margin: 20px 0;">
-                <h4 style="color: #fff; text-align: center; margin-bottom: 20px; font-size: 1.3em;">🏗️ 4-Milestone Architecture</h4>
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 30px; margin: 20px 0;">
+                <p style="color: rgba(255,255,255,0.95); text-align: center; font-size: 1.1em; line-height: 1.7; margin-bottom: 25px;">
+                    <strong>Systems Craft</strong> is a series of hands-on tutorials teaching systems engineering by building real infrastructure from first principles. Each craft focuses on one system component with progressive optimization phases.
+                </p>
 
-                <!-- Milestone 1 -->
-                <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border-radius: 10px; padding: 18px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(39,174,96,0.3);">
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <div style="background: #fff; color: #27ae60; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">✓</div>
-                        <div style="color: #fff; font-size: 1.1em; font-weight: bold;">Milestone 1: Ingestion Layer</div>
-                        <span style="margin-left: auto; background: #fff; padding: 4px 10px; border-radius: 15px; color: #27ae60; font-weight: bold; font-size: 0.85em;">COMPLETE</span>
+                <!-- Craft #1 - Current -->
+                <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(39,174,96,0.4); border: 3px solid #f1c40f;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <div style="background: #f1c40f; color: #27ae60; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.3em; margin-right: 15px; box-shadow: 0 3px 10px rgba(241,196,15,0.5);">1</div>
+                        <div>
+                            <div style="color: #f1c40f; font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">YOU ARE HERE</div>
+                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">Metrics Ingestion System</div>
+                        </div>
+                        <span style="margin-left: auto; background: #f1c40f; padding: 6px 14px; border-radius: 20px; color: #27ae60; font-weight: bold; font-size: 0.9em;">ACTIVE</span>
                     </div>
-                    <div style="color: rgba(255,255,255,0.95); font-size: 0.9em; line-height: 1.5; padding-left: 47px;">
-                        HTTP server (raw sockets) + Thread pool + Keep-Alive + Rate limiting<br>
-                        <strong style="color: #f1c40f;">Performance:</strong> 2,253 RPS, 100% success, 0.25ms latency
-                    </div>
-                </div>
-
-                <div style="text-align: center; color: rgba(255,255,255,0.6); font-size: 1.5em; margin: 8px 0;">↓</div>
-
-                <!-- Milestone 2 -->
-                <div style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); border-radius: 10px; padding: 18px; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <div style="background: #fff; color: #e67e22; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">2</div>
-                        <div style="color: #fff; font-size: 1.1em; font-weight: bold;">Milestone 2: Message Queue</div>
-                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 15px; color: #fff; font-size: 0.85em;">Planned</span>
-                    </div>
-                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.5; padding-left: 47px;">
-                        Kafka producer + Partitioning strategy + Batching + Backpressure
+                    <div style="color: rgba(255,255,255,0.95); font-size: 0.95em; line-height: 1.6; padding-left: 60px;">
+                        <strong>What you'll build:</strong> High-performance HTTP server from raw sockets → Thread pool → Lock-free ring buffers → Custom JSON parser → Rate limiting<br>
+                        <strong>Skills learned:</strong> Concurrent programming, performance optimization, systems profiling<br>
+                        <strong>Result:</strong> 2,253 RPS sustained, 100% reliability, p50 = 0.25ms latency<br>
+                        <strong>Phases:</strong> 7 progressive optimizations (sequential → production-ready)
                     </div>
                 </div>
 
-                <div style="text-align: center; color: rgba(255,255,255,0.6); font-size: 1.5em; margin: 8px 0;">↓</div>
-
-                <!-- Milestone 3 -->
-                <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius: 10px; padding: 18px; margin-bottom: 12px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <div style="background: #fff; color: #3498db; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">3</div>
-                        <div style="color: #fff; font-size: 1.1em; font-weight: bold;">Milestone 3: Stream Processing</div>
-                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 15px; color: #fff; font-size: 0.85em;">Planned</span>
+                <!-- Craft #2 - Coming Soon -->
+                <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius: 12px; padding: 20px; margin-bottom: 15px; opacity: 0.9;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <div style="background: rgba(255,255,255,0.9); color: #3498db; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.3em; margin-right: 15px;">2</div>
+                        <div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">COMING SOON</div>
+                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">Distributed Cache (Redis-like)</div>
+                        </div>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; color: #fff; font-size: 0.85em;">Planned</span>
                     </div>
-                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.5; padding-left: 47px;">
-                        Flink time-windows + Aggregations (avg, p95, p99) + Anomaly detection
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.95em; line-height: 1.6; padding-left: 60px;">
+                        <strong>What you'll build:</strong> In-memory key-value store with replication, sharding, and persistence<br>
+                        <strong>Skills learned:</strong> Distributed systems, consensus algorithms, data structures<br>
+                        <strong>Topics:</strong> Hash tables, LRU eviction, Raft consensus, AOF persistence
                     </div>
                 </div>
 
-                <div style="text-align: center; color: rgba(255,255,255,0.6); font-size: 1.5em; margin: 8px 0;">↓</div>
-
-                <!-- Milestone 4 -->
-                <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); border-radius: 10px; padding: 18px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                        <div style="background: #fff; color: #9b59b6; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">4</div>
-                        <div style="color: #fff; font-size: 1.1em; font-weight: bold;">Milestone 4: Storage & Visualization</div>
-                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 15px; color: #fff; font-size: 0.85em;">Planned</span>
+                <!-- Craft #3 - Future -->
+                <div style="background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); border-radius: 12px; padding: 20px; margin-bottom: 15px; opacity: 0.85;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <div style="background: rgba(255,255,255,0.85); color: #e67e22; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.3em; margin-right: 15px;">3</div>
+                        <div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">FUTURE</div>
+                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">Message Queue (Kafka-like)</div>
+                        </div>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; color: #fff; font-size: 0.85em;">Planned</span>
                     </div>
-                    <div style="color: rgba(255,255,255,0.9); font-size: 0.9em; line-height: 1.5; padding-left: 47px;">
-                        InfluxDB cluster + Retention policies + Grafana dashboards + Alerts
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.95em; line-height: 1.6; padding-left: 60px;">
+                        <strong>What you'll build:</strong> Distributed message broker with pub/sub, partitioning, and replication<br>
+                        <strong>Skills learned:</strong> Stream processing, disk I/O optimization, distributed coordination<br>
+                        <strong>Topics:</strong> Log-structured storage, zero-copy, consumer groups, leader election
+                    </div>
+                </div>
+
+                <!-- Craft #4 - Future -->
+                <div style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); border-radius: 12px; padding: 20px; opacity: 0.8;">
+                    <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                        <div style="background: rgba(255,255,255,0.8); color: #9b59b6; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.3em; margin-right: 15px;">4</div>
+                        <div>
+                            <div style="color: rgba(255,255,255,0.7); font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">FUTURE</div>
+                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">Time-Series Database</div>
+                        </div>
+                        <span style="margin-left: auto; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; color: #fff; font-size: 0.85em;">Planned</span>
+                    </div>
+                    <div style="color: rgba(255,255,255,0.9); font-size: 0.95em; line-height: 1.6; padding-left: 60px;">
+                        <strong>What you'll build:</strong> Columnar storage engine optimized for time-series data and aggregations<br>
+                        <strong>Skills learned:</strong> Database internals, compression algorithms, query optimization<br>
+                        <strong>Topics:</strong> LSM trees, delta encoding, downsampling, query planning
                     </div>
                 </div>
             </div>
 
             <div class="success-box">
-                <h4>✅ What You'll Build</h4>
-                <p><strong>Milestone 1: High-Performance Ingestion Layer (Complete)</strong></p>
-                <ul>
-                    <li>HTTP server from raw sockets (no frameworks)</li>
-                    <li>Thread pool + Keep-Alive connections (2,253 RPS sustained)</li>
-                    <li>Custom JSON parser with O(n) single-pass algorithm</li>
-                    <li>Lock-free ring buffer using std::atomic</li>
-                    <li>Rate limiting with hash-based client tracking</li>
-                    <li>Producer-consumer async I/O pattern</li>
+                <h4>✅ What You'll Build in Craft #1</h4>
+                <p><strong>7 Progressive Optimization Phases</strong></p>
+                <ul style="column-count: 2; column-gap: 30px;">
+                    <li><strong>Phase 1:</strong> Thread-per-request model</li>
+                    <li><strong>Phase 2:</strong> Async I/O with producer-consumer</li>
+                    <li><strong>Phase 3:</strong> Optimized JSON parser (O(n))</li>
+                    <li><strong>Phase 4:</strong> Hash-based mutex pool</li>
+                    <li><strong>Phase 5:</strong> Thread pool architecture</li>
+                    <li><strong>Phase 6:</strong> Lock-free ring buffers</li>
+                    <li><strong>Phase 7:</strong> HTTP Keep-Alive + backlog tuning</li>
                 </ul>
 
-                <p style="margin-top: 15px;"><strong>Milestone 2: Message Queue Integration (Planned)</strong></p>
-                <ul>
-                    <li>Apache Kafka producer with batching</li>
-                    <li>Partitioning strategy by client_id</li>
-                    <li>Backpressure handling and retry logic</li>
+                <p style="margin-top: 20px;"><strong>Core Components Built:</strong></p>
+                <ul style="column-count: 2; column-gap: 30px;">
+                    <li>HTTP server (raw Berkeley sockets)</li>
+                    <li>Thread pool with task queue</li>
+                    <li>Custom JSON parser (zero dependencies)</li>
+                    <li>Lock-free atomic ring buffers</li>
+                    <li>Sliding window rate limiter</li>
+                    <li>HTTP Keep-Alive persistent connections</li>
                 </ul>
 
-                <p style="margin-top: 15px;"><strong>Milestone 3: Stream Processing (Planned)</strong></p>
-                <ul>
-                    <li>Apache Flink time-window aggregations</li>
-                    <li>Anomaly detection with CEP patterns</li>
-                    <li>Alert generation pipeline</li>
-                </ul>
-
-                <p style="margin-top: 15px;"><strong>Milestone 4: Storage & Visualization (Planned)</strong></p>
-                <ul>
-                    <li>InfluxDB cluster with retention policies</li>
-                    <li>Grafana dashboards and alerting</li>
-                    <li>Query optimization and downsampling</li>
-                </ul>
-            </div>
-
-            <h3>Milestone Progress</h3>
-            <div class="phase-progress">
-                <strong>Milestone 1: High-Performance Ingestion (Complete)</strong>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: 25%;">1 of 4 Milestones Complete</div>
+                <div style="margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 8px; border-left: 4px solid #27ae60;">
+                    <strong style="color: #27ae60;">🎯 Final Performance:</strong> 2,253 RPS sustained | 100% success rate | p50 = 0.25ms, p99 = 0.65ms | 45% CPU, 150MB memory
                 </div>
-                <p style="margin-top: 10px; color: #7f8c8d;">
-                    ✅ <strong>Milestone 1:</strong> Ingestion layer (2,253 RPS, 100% success, 0.25ms latency)<br>
-                    ⏳ <strong>Milestone 2:</strong> Kafka integration (partitioning, batching)<br>
-                    🔮 <strong>Milestone 3:</strong> Stream processing (Flink, aggregations, alerts)<br>
-                    🔮 <strong>Milestone 4:</strong> Storage & dashboards (InfluxDB, Grafana)
-                </p>
             </div>
 
-            <h3>How to Use This</h3>
-            <ol>
-                <li>Start with Phase 0 to understand the overall system design</li>
-                <li>Work through each phase in order—they build on each other</li>
-                <li>Implement the TODO(student) sections yourself before checking solutions</li>
-                <li>Run the load tests and compare your results to the expected numbers</li>
-                <li>Check the decision tree to see why alternatives were rejected</li>
-            </ol>
+            <h3>🎓 How to Use This Tutorial</h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                <div style="background: #ecf0f1; padding: 20px; border-radius: 10px; border-left: 4px solid #3498db;">
+                    <h4 style="color: #3498db; margin-top: 0;">📖 Guided Learning Path</h4>
+                    <ol style="line-height: 1.8; color: #2c3e50;">
+                        <li>Read each phase's tutorial above</li>
+                        <li>Understand the problem & solution</li>
+                        <li>Study the code examples</li>
+                        <li>See the performance impact</li>
+                    </ol>
+                    <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.9em;"><strong>Best for:</strong> Understanding concepts first</p>
+                </div>
+
+                <div style="background: #ecf0f1; padding: 20px; border-radius: 10px; border-left: 4px solid #27ae60;">
+                    <h4 style="color: #27ae60; margin-top: 0;">💻 Hands-On Practice</h4>
+                    <ol style="line-height: 1.8; color: #2c3e50;">
+                        <li><code style="background: #bdc3c7; padding: 2px 6px; border-radius: 3px;">git checkout phase-N-starter</code></li>
+                        <li>Read TODO comments in code</li>
+                        <li>Implement the optimization yourself</li>
+                        <li>Compare with <code style="background: #bdc3c7; padding: 2px 6px; border-radius: 3px;">phase-N-solution</code></li>
+                    </ol>
+                    <p style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 0.9em;"><strong>Best for:</strong> Learning by doing</p>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: #fff3cd; border-left: 4px solid #f39c12;">
+                <h4 style="color: #f39c12; margin-top: 0;">⚡ Pro Tips</h4>
+                <ul style="line-height: 1.8;">
+                    <li><strong>Measure everything:</strong> Run load tests before and after each optimization</li>
+                    <li><strong>Read the profiling data:</strong> See which optimizations had the biggest impact</li>
+                    <li><strong>Work sequentially:</strong> Each phase builds on the previous one</li>
+                    <li><strong>Fork the repo:</strong> Commit your implementations as you go</li>
+                    <li><strong>Compare approaches:</strong> Check <code>/docs</code> for decision trees explaining why certain designs were chosen</li>
+                </ul>
+            </div>
         </div>
 
         <!-- Phase 0: System Design -->
