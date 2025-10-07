@@ -4,7 +4,11 @@ Guidance for Claude Code when working with this codebase.
 
 ## Project Overview
 
-Systems Craft - A learning platform for building high-performance systems from first principles. The project implements a production-grade metrics ingestion service (like Prometheus/DataDog) with focus on performance optimization and concurrent programming. This hands-on approach teaches systems engineering through 7 progressive optimization phases.
+**Systems Craft → Craft #1: Metrics Ingestion**
+
+A hands-on tutorial for building a metrics ingestion system from scratch. This is the first craft in the Systems Craft series - a collection of tutorials teaching systems engineering by building real infrastructure from first principles.
+
+The project implements a production-grade metrics ingestion service (like Prometheus/DataDog) through 7 progressive optimization phases, focusing on concurrent programming and performance optimization. Students learn by doing, building each optimization themselves with guidance from the learning hub.
 
 ## Approach
 

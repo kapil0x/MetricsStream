@@ -1,6 +1,18 @@
-# Systems Craft
+# Systems Craft → Craft #1: Metrics Ingestion
 
-**Building high-performance systems from first principles.** A hands-on learning platform where you build a production-grade metrics ingestion service (like Prometheus or DataDog) from scratch. **Phase 1 (Ingestion Service) is fully implemented with 7 progressive optimization phases.** Complete system architecture, capacity planning, and design decisions documented in `/docs`.
+**A hands-on tutorial for building a metrics ingestion system from scratch.** Learn concurrent programming and performance optimization by building a production-grade metrics ingestion service (like Prometheus or DataDog) through **7 progressive optimization phases** - from sequential baseline to 2,253 RPS with 100% reliability.
+
+> **Systems Craft** is a series of hands-on tutorials teaching systems engineering through building real infrastructure from first principles. This is the first craft.
+
+**What you'll build:**
+- HTTP server from raw Berkeley sockets
+- Lock-free ring buffers with atomics
+- Thread pool architecture
+- Custom JSON parser (zero dependencies)
+- Sliding window rate limiting
+- HTTP Keep-Alive persistent connections
+
+**Performance achieved:** 2,253 RPS sustained, p50 = 0.25ms latency, 100% success rate with 100 concurrent clients.
 
 ## Architecture Overview
 
