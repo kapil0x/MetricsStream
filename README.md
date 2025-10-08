@@ -145,16 +145,36 @@ See [`docs/phase7_keep_alive_results.md`](docs/phase7_keep_alive_results.md) for
 
 Results stored in `performance_results.txt`.
 
-## Structure
+## Repository Structure
 
+This repository is organized to separate the system implementation from learning materials:
+
+```
+/src, /include           # System implementation (C++ source code)
+/build                   # Build artifacts (generated)
+/website                 # Learning hub & interactive tutorials (HTML/JS/CSS)
+/docs                    # Technical documentation (Markdown)
+/learning-resources      # Educational materials (visualizations, concept explanations)
+/tests                   # Test suites
+```
+
+**System Code:**
 ```
 src/
 ├── http_server.cpp        # Socket handling
-├── ingestion_service.cpp  # Rate limiting, JSON parsing  
+├── ingestion_service.cpp  # Rate limiting, JSON parsing
 └── main.cpp              # Entry point
 
 load_test.cpp             # Performance testing
 ```
+
+**Learning Materials:**
+- **Website** (GitHub Pages): Interactive learning hub at `/website`
+  - Phase-by-phase tutorials with labs
+  - System architecture visualizations
+  - Performance benchmarking dashboards
+- **Docs**: Technical deep-dives at `/docs` (ARCHITECTURE.md, DESIGN_DECISIONS.md, etc.)
+- **Learning Resources**: Concept explanations and diagrams at `/learning-resources`
 
 ## Notes
 
