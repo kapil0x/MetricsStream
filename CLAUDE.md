@@ -29,6 +29,98 @@ This is a space to focus on craft - the tough engineering problems that push lea
 
 The goal is deep understanding through building and measuring real systems.
 
+## AI Coordination & Service Decomposition
+
+**Critical Context:** This project teaches both distributed systems design AND how to coordinate AI agents to build them in parallel—the exact skills needed when every engineer manages teams of AI.
+
+### Service Boundaries (Production Architecture)
+
+In real production environments, each craft is a separate service owned by different teams:
+
+```
+Team 1: Ingestion Service (Craft #1)
+   ↓
+Team 2: Message Queue (Craft #2)
+   ↓
+Team 3: Time-Series Storage (Craft #3)
+   ↓
+Team 4: Query Engine (Craft #4) → Team 5: Alerting (Craft #5)
+```
+
+### API Contracts for Parallel Development
+
+Each service defines clear contracts:
+
+**Ingestion → Queue:**
+- Input: HTTP POST /metrics with JSON payload
+- Output: Enqueue to topic "metrics.inbound"
+- Contract: At-least-once delivery, client_id for partitioning
+
+**Queue → Storage:**
+- Input: Consume from "metrics.inbound" partition
+- Output: Batch write to storage engine
+- Contract: Ordered delivery per partition, offset tracking
+
+**Storage → Query:**
+- Input: Query API with time range and filters
+- Output: Time-series data points
+- Contract: Sub-second queries for 24h range
+
+**Query → Alerting:**
+- Input: Rule evaluation queries
+- Output: Alert trigger events
+- Contract: <1 min detection latency
+
+### Using AI Agents in Parallel
+
+When working with multiple AI agents (like using Task tool or multiple Claude instances):
+
+**Scenario 1: Building Craft #2 (Message Queue) while Craft #1 is done**
+```
+Agent 1: Implement persistent WAL and partitioning logic
+Agent 2: Build consumer group management and offset tracking
+Agent 3: Add replication and leader election (Raft)
+
+Contract: All agents implement the Queue API defined in craft2/API.md
+```
+
+**Scenario 2: Optimizing multiple components**
+```
+Agent 1: Optimize Ingestion rate limiting (Craft #1)
+Agent 2: Build Storage compression (Craft #3)
+Agent 3: Optimize Query indexing (Craft #4)
+
+Contract: No changes to API contracts, only internal optimizations
+```
+
+**Key Principle:** Define API contracts FIRST, then agents can build implementations in parallel.
+
+### Example: Coordinating 3 Agents on Craft #2
+
+**Step 1: Define API Contract (You as Tech Lead)**
+```
+craft2/API.md:
+- POST /produce → Enqueue message, return offset
+- GET /consume?partition=X&offset=Y → Return batch
+- POST /commit?group=G&offset=O → Commit consumer offset
+```
+
+**Step 2: Decompose into Independent Tasks**
+```
+Agent 1: Implement WAL and persistence layer (no networking)
+Agent 2: Implement HTTP server and produce/consume endpoints
+Agent 3: Implement consumer group coordination (separate module)
+```
+
+**Step 3: Integration**
+```
+You: Review each agent's implementation
+You: Integrate modules, run end-to-end tests
+You: Measure performance, document results
+```
+
+**This mirrors real distributed systems teams at Netflix, Uber, Google.**
+
 ## Current Implementation
 
 **Phase 0: Complete Monitoring PoC** ✅ (phase0/)
