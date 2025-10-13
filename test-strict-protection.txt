@@ -1,0 +1,3 @@
+Testing strict protection - should be blocked even for admins.
+
+Created: 2025-10-13
