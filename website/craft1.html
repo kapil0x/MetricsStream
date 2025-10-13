@@ -714,27 +714,27 @@ $ ./build/load_test 8080 20 10</div>
                 <p style="margin-top: 10px;"><strong>Note:</strong> Production deployments on AWS c5.2xlarge showed 15-20% higher throughput due to more cores and better I/O. Your results will vary based on hardware.</p>
             </div>
 
-            <h3>🏗️ Craft #1: Complete Platform Architecture</h3>
+            <h3>🏗️ Craft #1: Metrics Ingestion System</h3>
 
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 30px; margin: 20px 0;">
                 <p style="color: rgba(255,255,255,0.95); text-align: center; font-size: 1.1em; line-height: 1.7; margin-bottom: 25px;">
-                    Craft #1 builds a <strong>complete metrics platform</strong> through 4 progressive milestones. Milestone 1 (Phases 1-7) is complete and ready to use. The remaining milestones show the path to a production-ready monitoring system.
+                    Craft #1 focuses on <strong>optimizing metrics ingestion</strong> through 7 progressive phases (200 → 2,253 RPS). After completing Phase 0's architecture validation, you'll make the ingestion component production-ready through systematic optimization.
                 </p>
 
-                <!-- Milestone 1 - COMPLETE -->
+                <!-- Craft #1 Status -->
                 <div style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%); border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 6px 20px rgba(39,174,96,0.4); border: 3px solid #f1c40f;">
                     <div style="display: flex; align-items: center; margin-bottom: 12px;">
                         <div style="background: #f1c40f; color: #27ae60; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.3em; margin-right: 15px; box-shadow: 0 3px 10px rgba(241,196,15,0.5);">1</div>
                         <div>
-                            <div style="color: #f1c40f; font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">✓ MILESTONE COMPLETE</div>
-                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">High-Performance Ingestion Layer</div>
+                            <div style="color: #f1c40f; font-size: 0.75em; font-weight: 600; letter-spacing: 1px;">✓ CRAFT #1 COMPLETE</div>
+                            <div style="color: #fff; font-size: 1.3em; font-weight: bold;">High-Performance Metrics Ingestion</div>
                         </div>
                         <span style="margin-left: auto; background: #f1c40f; padding: 6px 14px; border-radius: 20px; color: #27ae60; font-weight: bold; font-size: 0.9em;">2,253 RPS</span>
                     </div>
                     <div style="color: rgba(255,255,255,0.95); font-size: 0.95em; line-height: 1.6; padding-left: 60px;">
-                        <strong>What you built:</strong> HTTP server from raw sockets → Thread pool → Lock-free ring buffers → Custom JSON parser → Rate limiting<br>
+                        <strong>What you'll build:</strong> HTTP server → Thread pool → Lock-free ring buffers → Custom JSON parser → Rate limiting<br>
                         <strong>Performance:</strong> 2,253 RPS sustained, 100% reliability, p50 = 0.25ms latency<br>
-                        <strong>Phases completed:</strong> 7 progressive optimizations (Phases 1-7)<br>
+                        <strong>Phases included:</strong> 7 progressive optimizations (Phases 1-7)<br>
                         <strong>Skills mastered:</strong> Concurrent programming, performance optimization, systems profiling
                     </div>
                 </div>
@@ -742,16 +742,16 @@ $ ./build/load_test 8080 20 10</div>
                 <div style="margin-top: 30px; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
                     <h4 style="color: white; margin-top: 0; margin-bottom: 15px;">🗺️ Your Learning Journey: 6 Crafts</h4>
                     <p style="margin-bottom: 20px; opacity: 0.95; line-height: 1.7;">
-                        Craft #1 teaches you metrics ingestion with 8 optimization phases. Then continue building the complete monitoring platform:
+                        After completing Phase 0's PoC, Craft #1 optimizes the ingestion component through 7 phases (200 → 2,253 RPS). Then continue with Crafts #2-5 to complete the monitoring platform:
                     </p>
                     <div style="display: grid; gap: 12px;">
-                        <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #f1c40f;">
-                            <strong>Craft #0: Monitoring Platform PoC</strong> (Coming Soon)<br>
-                            <span style="opacity: 0.9; font-size: 0.9em;">End-to-end system in an afternoon - see the big picture</span>
+                        <div style="background: rgba(39,174,96,0.15); padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                            <strong>Craft #0: Monitoring Platform PoC</strong> ✅ <span style="color: #27ae60;">(AVAILABLE)</span><br>
+                            <span style="opacity: 0.9; font-size: 0.9em;">End-to-end system in an afternoon - validate architecture first</span>
                         </div>
-                        <div style="background: rgba(39,174,96,0.3); padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60;">
-                            <strong>Craft #1: Metrics Ingestion</strong> (You are here! ✅)<br>
-                            <span style="opacity: 0.9; font-size: 0.9em;">HTTP server, rate limiting, async I/O - 200 → 145K RPS</span>
+                        <div style="background: rgba(241,196,15,0.2); padding: 15px; border-radius: 8px; border-left: 4px solid #f1c40f;">
+                            <strong>Craft #1: Metrics Ingestion</strong> (You are here! 👉)<br>
+                            <span style="opacity: 0.9; font-size: 0.9em;">HTTP server, rate limiting, async I/O - 200 → 2,253 RPS</span>
                         </div>
                         <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; border-left: 4px solid rgba(255,255,255,0.5);">
                             <strong>Craft #2: Distributed Message Queue</strong> (Coming Soon)<br>
@@ -771,7 +771,7 @@ $ ./build/load_test 8080 20 10</div>
                         </div>
                     </div>
                     <p style="margin-top: 20px; opacity: 0.95; line-height: 1.7;">
-                        <strong>By the end:</strong> You'll have built a complete distributed monitoring platform and understand how each component connects - ingestion → queue → storage → query → alerting.
+                        <strong>Complete Journey (Phase 0 + Crafts #1-5):</strong> You'll build a complete distributed monitoring platform from scratch. Phase 0 validates the architecture, then each craft optimizes one component: ingestion → queue → storage → query → alerting.
                     </p>
                 </div>
             </div>
