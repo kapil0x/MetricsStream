@@ -321,7 +321,7 @@
 
         <div class="intro-section">
             <h2>🎯 What is Systems Craft?</h2>
-            <p>Systems Craft teaches you how to design and build large-scale distributed systems by constructing a complete monitoring infrastructure—ingestion, storage, querying, and alerting. Each "craft" builds one component of the system, teaching you how real distributed systems work at companies like Google, Netflix, and Amazon.</p>
+            <p>Systems Craft teaches you how to design and build large-scale distributed systems by constructing a complete monitoring infrastructure. Start with a working proof-of-concept in an afternoon (Craft #0), then build each component production-grade: ingestion, message queue, storage, querying, and alerting. Learn how real distributed systems work at companies like Google, Netflix, and Amazon.</p>
 
             <p><strong>You'll learn systems design the way senior engineers at Big Tech do:</strong></p>
             <ul style="margin-left: 30px; margin-top: 10px; color: #34495e; font-size: 1.05em;">
@@ -340,6 +340,50 @@
         <h2 style="color: white; text-align: center; font-size: 2.5em; margin: 60px 0 40px 0;">🎨 The Crafts</h2>
 
         <div class="crafts-grid">
+            <!-- Craft #0: Proof of Concept -->
+            <div class="craft-card future">
+                <div class="craft-header">
+                    <div class="craft-number">0</div>
+                    <div class="craft-title">
+                        <h3>Monitoring Platform PoC</h3>
+                    </div>
+                    <span class="craft-status">COMING SOON</span>
+                </div>
+
+                <p class="craft-description">
+                    Build a complete end-to-end monitoring platform in an afternoon. Simple implementations of all 5 components (ingestion, queue, storage, querying, alerting) to see how distributed systems fit together. No optimization, no production concerns—just a working system to validate the architecture.
+                </p>
+
+                <div class="craft-details">
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">What you'll build:</span>
+                        <span class="craft-details-value">Basic HTTP server, in-memory queue, file storage, simple queries, email alerts</span>
+                    </div>
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">Component integration, data flow, API contracts, basic architecture patterns</span>
+                    </div>
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">Duration:</span>
+                        <span class="craft-details-value">2-3 hours (end-to-end working system)</span>
+                    </div>
+                </div>
+
+                <div class="craft-milestones">
+                    <h4>📊 What You'll Learn:</h4>
+                    <ul class="milestone-list">
+                        <li><strong>Big Picture:</strong> How all components connect in a monitoring platform</li>
+                        <li><strong>Data Flow:</strong> Metrics journey from ingestion → storage → query → alert</li>
+                        <li><strong>Quick Wins:</strong> See a working system in hours, not weeks</li>
+                        <li><strong>Foundation:</strong> Reference point before building production-grade components</li>
+                    </ul>
+                </div>
+
+                <div class="craft-cta">
+                    Coming Soon
+                </div>
+            </div>
+
             <!-- Craft #1: Metrics Ingestion -->
             <a href="craft1.html" class="craft-card">
                 <div class="craft-header">
@@ -388,10 +432,54 @@
                 </div>
             </a>
 
-            <!-- Craft #2: Time-Series Storage Engine -->
+            <!-- Craft #2: Distributed Message Queue -->
             <div class="craft-card future">
                 <div class="craft-header">
                     <div class="craft-number">2</div>
+                    <div class="craft-title">
+                        <h3>Distributed Message Queue</h3>
+                    </div>
+                    <span class="craft-status">COMING SOON</span>
+                </div>
+
+                <p class="craft-description">
+                    Build a distributed message queue (like Kafka or Pulsar) that sits between ingestion and storage. Design for high-throughput buffering, implement partitioning for parallelism, and handle message ordering guarantees. Learn how message queues decouple producers from consumers and enable stream processing.
+                </p>
+
+                <div class="craft-details">
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">What you'll build:</span>
+                        <span class="craft-details-value">Topic/partition model, write-ahead log, consumer groups, offset management, replication</span>
+                    </div>
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">Partitioning strategies, message ordering, at-least-once vs exactly-once delivery, leader election</span>
+                    </div>
+                    <div class="craft-details-row">
+                        <span class="craft-details-label">Target performance:</span>
+                        <span class="craft-details-value">1M+ messages/sec, horizontal scaling, sub-10ms latency</span>
+                    </div>
+                </div>
+
+                <div class="craft-milestones">
+                    <h4>📊 Learning Progression:</h4>
+                    <ul class="milestone-list">
+                        <li><strong>Phase 1:</strong> Single-partition queue with WAL persistence</li>
+                        <li><strong>Phase 2:</strong> Multi-partition topics for parallelism</li>
+                        <li><strong>Phase 3:</strong> Consumer groups and offset tracking</li>
+                        <li><strong>Phase 4:</strong> Replication and leader election (Raft)</li>
+                    </ul>
+                </div>
+
+                <div class="craft-cta">
+                    Coming Soon
+                </div>
+            </div>
+
+            <!-- Craft #3: Time-Series Storage Engine -->
+            <div class="craft-card future">
+                <div class="craft-header">
+                    <div class="craft-number">3</div>
                     <div class="craft-title">
                         <h3>Time-Series Storage Engine</h3>
                     </div>
@@ -432,10 +520,10 @@
                 </div>
             </div>
 
-            <!-- Craft #3: Query & Aggregation Engine -->
+            <!-- Craft #4: Query & Aggregation Engine -->
             <div class="craft-card future">
                 <div class="craft-header">
-                    <div class="craft-number">3</div>
+                    <div class="craft-number">4</div>
                     <div class="craft-title">
                         <h3>Query & Aggregation Engine</h3>
                     </div>
@@ -476,10 +564,10 @@
                 </div>
             </div>
 
-            <!-- Craft #4: Alerting & Notification System -->
+            <!-- Craft #5: Alerting & Notification System -->
             <div class="craft-card future">
                 <div class="craft-header">
-                    <div class="craft-number">4</div>
+                    <div class="craft-number">5</div>
                     <div class="craft-title">
                         <h3>Alerting & Notification System</h3>
                     </div>
@@ -523,7 +611,14 @@
 
         <div class="intro-section" style="margin-top: 60px;">
             <h2>🚀 Getting Started</h2>
-            <p>Ready to start? Click on <strong>Craft #1: Metrics Ingestion System</strong> above to begin your journey. Each craft is self-contained with clear instructions, starter code, and reference implementations.</p>
+            <p>Ready to start? <strong>Craft #0 (coming soon)</strong> will give you a working end-to-end system in an afternoon. Then dive into <strong>Craft #1: Metrics Ingestion System</strong> (available now) to build the first component production-grade. Each craft is self-contained with clear instructions, starter code, and reference implementations.</p>
+
+            <p style="margin-top: 20px;"><strong>Learning Path:</strong></p>
+            <ul style="margin-left: 30px; margin-top: 10px; color: #34495e; font-size: 1.05em;">
+                <li><strong>Craft #0:</strong> Build PoC to see the big picture (2-3 hours)</li>
+                <li><strong>Crafts #1-5:</strong> Build each component production-grade (8-12 hours each)</li>
+                <li><strong>Result:</strong> Complete monitoring platform with distributed systems knowledge</li>
+            </ul>
 
             <p style="margin-top: 20px;"><strong>Prerequisites:</strong></p>
             <ul style="margin-left: 30px; margin-top: 10px; color: #34495e; font-size: 1.05em;">
