@@ -315,26 +315,26 @@
     <div class="container">
         <header>
             <h1>⚡ Systems Craft</h1>
-            <p class="subtitle">Learn Systems Engineering by Building Real Infrastructure</p>
-            <p class="tagline">Hands-on tutorials teaching concurrent programming, performance optimization, and distributed systems through building production-grade infrastructure from first principles</p>
+            <p class="subtitle">Learn Large-Scale Systems Design by Building Real Infrastructure</p>
+            <p class="tagline">Hands-on tutorials teaching distributed systems architecture, systems design, and infrastructure engineering by building a complete monitoring platform from scratch</p>
         </header>
 
         <div class="intro-section">
             <h2>🎯 What is Systems Craft?</h2>
-            <p>Systems Craft is a series of hands-on tutorials that teach systems engineering by building real infrastructure components from scratch. Each "craft" focuses on one system (like metrics ingestion, distributed cache, message queue, or time-series database) and guides you through progressive optimization phases.</p>
+            <p>Systems Craft teaches you how to design and build large-scale distributed systems by constructing a complete monitoring infrastructure—ingestion, storage, querying, and alerting. Each "craft" builds one component of the system, teaching you how real distributed systems work at companies like Google, Netflix, and Amazon.</p>
 
-            <p><strong>You'll learn the same engineering methodology used at Google, Meta, Amazon, and Netflix:</strong></p>
+            <p><strong>You'll learn systems design the way senior engineers at Big Tech do:</strong></p>
             <ul style="margin-left: 30px; margin-top: 10px; color: #34495e; font-size: 1.05em;">
-                <li>Profile and measure real bottlenecks (not theoretical ones)</li>
-                <li>Design targeted solutions based on data</li>
-                <li>Implement optimizations with concurrent programming patterns</li>
-                <li>Validate improvements with systematic load testing</li>
+                <li>Architect distributed systems that scale to millions of requests</li>
+                <li>Design storage engines optimized for specific access patterns</li>
+                <li>Build resilient systems with replication and fault tolerance</li>
+                <li>Implement real-time data pipelines and stream processing</li>
             </ul>
         </div>
 
         <div class="highlight-box">
-            <h3>💼 Production Engineering, Not Toy Examples</h3>
-            <p>For core infrastructure at Big Tech, engineers build custom solutions optimized for their specific scale and requirements. These tutorials teach you that same approach: raw sockets for HTTP servers, lock-free data structures for concurrency, custom parsers for performance. You'll write real code, see real bottlenecks, and implement real optimizations using the same systematic methodology as production engineering teams.</p>
+            <h3>💼 Real Systems Design, Not Toy Examples</h3>
+            <p>At Big Tech, infrastructure teams don't just use databases—they build them. They don't just deploy to Kubernetes—they understand the distributed systems patterns that make it work. Systems Craft teaches you to think at that level: designing data models, choosing consistency guarantees, architecting for failure, and building systems that handle real-world scale. By the end, you'll have built a complete monitoring platform and understand how each component fits into the distributed systems landscape.</p>
         </div>
 
         <h2 style="color: white; text-align: center; font-size: 2.5em; margin: 60px 0 40px 0;">🎨 The Crafts</h2>
@@ -351,21 +351,21 @@
                 </div>
 
                 <p class="craft-description">
-                    Build a high-performance HTTP metrics ingestion service (like Prometheus or DataDog) from raw Berkeley sockets. Start with a sequential baseline (200 RPS) and optimize through 7 progressive phases to reach 2,253 RPS with 100% reliability.
+                    Build a metrics ingestion service (like Prometheus or DataDog) from scratch. Design for scale, implement systematic optimizations, and understand the architectural trade-offs in building high-throughput data ingestion systems.
                 </p>
 
                 <div class="craft-details">
                     <div class="craft-details-row">
                         <span class="craft-details-label">What you'll build:</span>
-                        <span class="craft-details-value">HTTP server, thread pool, lock-free ring buffers, custom JSON parser, rate limiting</span>
+                        <span class="craft-details-value">HTTP API server, rate limiting, async I/O pipeline, data validation layer</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Skills learned:</span>
-                        <span class="craft-details-value">Concurrent programming, performance optimization, systems profiling, async I/O</span>
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">API design, backpressure handling, resource management, systematic optimization</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Final result:</span>
-                        <span class="craft-details-value">2,253 RPS sustained, p50 = 0.25ms latency, 100% success rate</span>
+                        <span class="craft-details-label">Scale achieved:</span>
+                        <span class="craft-details-value">200 RPS → 2,253 RPS through 7 optimization phases</span>
                     </div>
                     <div class="craft-details-row">
                         <span class="craft-details-label">Duration:</span>
@@ -374,12 +374,12 @@
                 </div>
 
                 <div class="craft-milestones">
-                    <h4>📊 4 Milestones:</h4>
+                    <h4>📊 Learning Progression:</h4>
                     <ul class="milestone-list">
-                        <li><strong>Milestone 1:</strong> High-Performance Ingestion (Phases 1-7) - 2,253 RPS</li>
-                        <li><strong>Milestone 2:</strong> Message Queue Integration - Kafka producer with batching</li>
-                        <li><strong>Milestone 3:</strong> Stream Processing - Flink integration for aggregations</li>
-                        <li><strong>Milestone 4:</strong> Storage & Visualization - InfluxDB + Grafana dashboards</li>
+                        <li><strong>Phase 1-7:</strong> Design and optimize ingestion layer (200 → 2,253 RPS)</li>
+                        <li><strong>Extension:</strong> Integrate with message queue (Kafka) for downstream processing</li>
+                        <li><strong>Extension:</strong> Add stream processing for real-time aggregations</li>
+                        <li><strong>Extension:</strong> Connect to storage layer (foundation for Craft #2)</li>
                     </ul>
                 </div>
 
@@ -388,42 +388,42 @@
                 </div>
             </a>
 
-            <!-- Craft #2: Distributed Cache -->
+            <!-- Craft #2: Time-Series Storage Engine -->
             <div class="craft-card future">
                 <div class="craft-header">
                     <div class="craft-number">2</div>
                     <div class="craft-title">
-                        <h3>Distributed Cache</h3>
+                        <h3>Time-Series Storage Engine</h3>
                     </div>
                     <span class="craft-status">COMING SOON</span>
                 </div>
 
                 <p class="craft-description">
-                    Build an in-memory key-value store (like Redis or Memcached) with replication, sharding, and persistence. Learn distributed systems concepts through implementing consensus algorithms and handling network partitions.
+                    Build a time-series database (like InfluxDB or TimescaleDB) optimized for storing and retrieving metrics data. Design storage formats, implement compression algorithms, and architect for write-heavy workloads with efficient point-in-time queries.
                 </p>
 
                 <div class="craft-details">
                     <div class="craft-details-row">
                         <span class="craft-details-label">What you'll build:</span>
-                        <span class="craft-details-value">Hash tables, LRU eviction, Raft consensus, AOF persistence, cluster management</span>
+                        <span class="craft-details-value">Write-ahead log, LSM tree storage, time-series compression (Gorilla), inverted indexes</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Skills learned:</span>
-                        <span class="craft-details-value">Distributed systems, consensus algorithms, data structures, fault tolerance</span>
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">Storage engine design, data modeling, compression algorithms, indexing strategies</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Expected result:</span>
-                        <span class="craft-details-value">100K ops/sec, sub-millisecond latency, automatic failover</span>
+                        <span class="craft-details-label">Target performance:</span>
+                        <span class="craft-details-value">1M+ writes/sec, 10:1 compression ratio, sub-second queries</span>
                     </div>
                 </div>
 
                 <div class="craft-milestones">
-                    <h4>📊 Planned Milestones:</h4>
+                    <h4>📊 Learning Progression:</h4>
                     <ul class="milestone-list">
-                        <li><strong>Milestone 1:</strong> Single-node cache with LRU eviction</li>
-                        <li><strong>Milestone 2:</strong> Replication with Raft consensus</li>
-                        <li><strong>Milestone 3:</strong> Sharding and partition management</li>
-                        <li><strong>Milestone 4:</strong> Persistence and crash recovery</li>
+                        <li><strong>Phase 1:</strong> WAL and in-memory writes for durability</li>
+                        <li><strong>Phase 2:</strong> LSM tree compaction for efficient storage</li>
+                        <li><strong>Phase 3:</strong> Time-series compression (Gorilla algorithm)</li>
+                        <li><strong>Phase 4:</strong> Tag-based indexing for fast queries</li>
                     </ul>
                 </div>
 
@@ -432,42 +432,42 @@
                 </div>
             </div>
 
-            <!-- Craft #3: Message Queue -->
+            <!-- Craft #3: Query & Aggregation Engine -->
             <div class="craft-card future">
                 <div class="craft-header">
                     <div class="craft-number">3</div>
                     <div class="craft-title">
-                        <h3>Message Queue</h3>
+                        <h3>Query & Aggregation Engine</h3>
                     </div>
                     <span class="craft-status">COMING SOON</span>
                 </div>
 
                 <p class="craft-description">
-                    Build a distributed message queue (like Kafka or RabbitMQ) with topics, partitions, and consumer groups. Handle high-throughput message delivery with ordering guarantees and fault tolerance.
+                    Build a query processor that retrieves and aggregates time-series data (like Prometheus PromQL or InfluxDB's query language). Design for parallel execution, implement common aggregations (sum, avg, percentiles), and optimize query planning for time-range queries.
                 </p>
 
                 <div class="craft-details">
                     <div class="craft-details-row">
                         <span class="craft-details-label">What you'll build:</span>
-                        <span class="craft-details-value">Topic partitions, consumer groups, offset management, replication, durability</span>
+                        <span class="craft-details-value">Query parser, execution planner, parallel aggregation engine, downsampling logic</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Skills learned:</span>
-                        <span class="craft-details-value">Distributed messaging, log-structured storage, replication, backpressure</span>
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">Query optimization, parallel processing, data aggregation, cache-aware design</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Expected result:</span>
-                        <span class="craft-details-value">1M+ messages/sec, exactly-once semantics, multi-datacenter replication</span>
+                        <span class="craft-details-label">Target performance:</span>
+                        <span class="craft-details-value">Query 100M+ data points in <1 second, handle complex aggregations</span>
                     </div>
                 </div>
 
                 <div class="craft-milestones">
-                    <h4>📊 Planned Milestones:</h4>
+                    <h4>📊 Learning Progression:</h4>
                     <ul class="milestone-list">
-                        <li><strong>Milestone 1:</strong> Single-broker queue with persistence</li>
-                        <li><strong>Milestone 2:</strong> Partitioning and consumer groups</li>
-                        <li><strong>Milestone 3:</strong> Replication and leader election</li>
-                        <li><strong>Milestone 4:</strong> Exactly-once semantics and transactions</li>
+                        <li><strong>Phase 1:</strong> Query parser and basic time-range scans</li>
+                        <li><strong>Phase 2:</strong> Aggregation functions (sum, avg, count, rate)</li>
+                        <li><strong>Phase 3:</strong> Parallel execution for multi-series queries</li>
+                        <li><strong>Phase 4:</strong> Query optimizer and result caching</li>
                     </ul>
                 </div>
 
@@ -476,42 +476,42 @@
                 </div>
             </div>
 
-            <!-- Craft #4: Time-Series Database -->
+            <!-- Craft #4: Alerting & Notification System -->
             <div class="craft-card future">
                 <div class="craft-header">
                     <div class="craft-number">4</div>
                     <div class="craft-title">
-                        <h3>Time-Series Database</h3>
+                        <h3>Alerting & Notification System</h3>
                     </div>
                     <span class="craft-status">COMING SOON</span>
                 </div>
 
                 <p class="craft-description">
-                    Build a time-series database (like InfluxDB or TimescaleDB) optimized for high-cardinality metrics. Implement compression algorithms, efficient indexing, and query processing for time-based data.
+                    Build a real-time alerting system (like Prometheus Alertmanager or PagerDuty) that evaluates alert rules, manages alert lifecycle, and delivers notifications. Design for low-latency detection, handle alert routing and grouping, and implement reliable notification delivery.
                 </p>
 
                 <div class="craft-details">
                     <div class="craft-details-row">
                         <span class="craft-details-label">What you'll build:</span>
-                        <span class="craft-details-value">TSM compression, inverted indexes, query engine, downsampling, retention policies</span>
+                        <span class="craft-details-value">Rule evaluation engine, alert state machine, notification dispatcher, escalation policies</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Skills learned:</span>
-                        <span class="craft-details-value">Data compression, indexing strategies, query optimization, storage engines</span>
+                        <span class="craft-details-label">Systems concepts:</span>
+                        <span class="craft-details-value">Event-driven architecture, state management, reliability patterns, webhook delivery</span>
                     </div>
                     <div class="craft-details-row">
-                        <span class="craft-details-label">Expected result:</span>
-                        <span class="craft-details-value">10M+ data points/sec writes, sub-second queries, 10:1 compression</span>
+                        <span class="craft-details-label">Target performance:</span>
+                        <span class="craft-details-value">Evaluate 10K+ rules/sec, <1 min detection latency, 99.99% notification delivery</span>
                     </div>
                 </div>
 
                 <div class="craft-milestones">
-                    <h4>📊 Planned Milestones:</h4>
+                    <h4>📊 Learning Progression:</h4>
                     <ul class="milestone-list">
-                        <li><strong>Milestone 1:</strong> Write-optimized storage with WAL</li>
-                        <li><strong>Milestone 2:</strong> TSM compression and compaction</li>
-                        <li><strong>Milestone 3:</strong> Inverted indexes for tag queries</li>
-                        <li><strong>Milestone 4:</strong> Query engine with aggregations</li>
+                        <li><strong>Phase 1:</strong> Rule engine and threshold detection</li>
+                        <li><strong>Phase 2:</strong> Alert grouping and deduplication</li>
+                        <li><strong>Phase 3:</strong> Multi-channel notification (email, Slack, PagerDuty)</li>
+                        <li><strong>Phase 4:</strong> Escalation policies and on-call scheduling</li>
                     </ul>
                 </div>
 
