@@ -1,0 +1,6 @@
+This is a test file to verify branch protection is working.
+
+If you can see this file on the main branch, then branch protection is bypassed for admins.
+If this push fails, then branch protection is properly enforced.
+
+Created at: 2025-10-13
