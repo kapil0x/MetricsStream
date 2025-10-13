@@ -1,0 +1,6 @@
+Testing direct push to main after removing all protections.
+
+If this file appears on main, all protections are disabled.
+
+Created: 2025-10-13
+Test: Direct push to main
