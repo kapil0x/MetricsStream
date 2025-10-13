@@ -1,0 +1,6 @@
+Second test file to verify branch protection.
+
+Testing after adjusting branch protection settings.
+
+Created at: 2025-10-13
+Attempt: #2

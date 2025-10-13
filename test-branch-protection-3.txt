@@ -1,0 +1,6 @@
+Third test file - testing after adjusting bypass settings.
+
+Testing if direct push to main is now allowed or still blocked.
+
+Created at: 2025-10-13
+Attempt: #3
